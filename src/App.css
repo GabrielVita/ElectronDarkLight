@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+
+@theme {
+  /* Definindo as cores customizadas */
+  --color-primary: #1b3561;
+  --color-secondary: #ff8212;
+}
+
+/* Esta linha abaixo é a única forma do 'dark:' funcionar por classe no v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+
+
+/* Estilos base para garantir que o fundo mude mesmo se o tailwind falhar */
+:root {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+:root.dark {
+  background-color: #09090b;
+  color: #ffffff;
+}
