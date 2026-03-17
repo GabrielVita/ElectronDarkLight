@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Thermometer, Droplets, Activity, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { translateSector } from '../utils/translations';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
   ResponsiveContainer, Legend, BarChart, Bar, Cell, Tooltip 
@@ -131,8 +132,8 @@ export function DeviceCard({ device, startDate, endDate }: any) {
       
       {/* HEADER */}
       <div>
-        <h3 className="text-2xl font-black text-zinc-800 dark:text-zinc-100 uppercase italic leading-none">{device.equipment}</h3>
-        <p className="text-xs font-bold text-primary tracking-widest">{device.tag} • {device.sector}</p>
+        <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 uppercase leading-none">{device.equipment}</h3>
+        <p className="text-md font-semibold text-primary dark:text-secondary tracking-widest">{device.name} • {translateSector(device.sector)}</p>
       </div>
 
       {/* LINHA 1: STATS TEMPERATURA E UMIDADE */}
@@ -183,11 +184,11 @@ export function DeviceCard({ device, startDate, endDate }: any) {
       {/* LINHA 2: GRÁFICO DE BARRAS DE NÃO CONFORMIDADES (MESES DO CALENDÁRIO) */}
       <div className="bg-zinc-50 dark:bg-zinc-800/30 p-6 rounded-[2rem] border border-zinc-200 dark:border-zinc-800">
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 font-black text-xs uppercase italic">
+          <div className="flex items-center gap-2 text-red-500 dark:text-red-400 font-black text-xs uppercase italic">
             <AlertTriangle size={16} /> Histórico de Inconformidades (Trimestre)
           </div>
           {percentageTrend && (
-            <div className={`flex items-center gap-1 text-xs font-black ${percentageTrend.up ? 'text-red-500' : 'text-emerald-500'}`}>
+            <div className={`flex items-center gap-1 text-xs font-semibold ${percentageTrend.up ? 'text-red-500' : 'text-emerald-500'}`}>
               {percentageTrend.up ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
               {percentageTrend.val}% vs mês anterior
             </div>
@@ -209,9 +210,9 @@ export function DeviceCard({ device, startDate, endDate }: any) {
                 cursor={{fill: 'transparent'}}
                 contentStyle={{ borderRadius: '12px', border: 'none', fontWeight: 'bold' }}
               />
-              <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={40}>
+              <Bar dataKey="count" name="Qtd" radius={[6, 6, 0, 0]} barSize={40}>
                 {ncChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={index === 2 ? '#f59e0b' : '#3f3f46'} fillOpacity={index === 2 ? 1 : 0.4} />
+                  <Cell key={`cell-${index}`} fill={index === 2 ? '#eb4034' : '#3f3f46'} fillOpacity={index === 2 ? 1 : 0.4} />
                 ))}
               </Bar>
             </BarChart>

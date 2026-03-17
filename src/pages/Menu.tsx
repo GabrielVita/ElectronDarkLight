@@ -221,10 +221,14 @@ export function Menu() {
               </div>
               <div className="text-xl gap-y-3 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col items-start justify-between text-zinc-800 dark:text-zinc-400">
                   <div>
-                    <div>Inconformidades sem plano</div>
-                    <div className='text-lg text-zinc-600 dark:text-zinc-600'>(No ano)</div>  
+                    <div>Inconformidades SPA</div>
+                    <div className='text-lg text-zinc-600 dark:text-zinc-600'>(Sem plano de ação)</div>  
                   </div>
-                  <div className='text-4xl text-red-500 font-bold'>{totalNonConformities}</div>
+                  <div className='flex justify-between items-end w-full'>
+                    <div className='text-4xl text-red-500 font-bold'>{totalNonConformities}</div>
+                    <div className='text-lg text-zinc-600 dark:text-zinc-600'>No ano</div>   
+                  </div>
+                  
               </div>
             </div>
           </section>
@@ -264,7 +268,7 @@ export function Menu() {
                     Equipamento
                   </th>
                   <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider text-center">
-                    Inconformidades
+                    Inconformidades spa.
                   </th>
                   <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider">
                     Temp. Recente
