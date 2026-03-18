@@ -25,6 +25,10 @@ interface SidebarProps {
 export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const navigate = useNavigate();
 
+  const savedUser = localStorage.getItem('@App:user');
+  const user = savedUser ? JSON.parse(savedUser) : null;
+  const isAdmin = user?.role === 'ADMIN';
+
   // --- NOVA FUNÇÃO DE DIRECIONAMENTO INTELIGENTE ---
   const handleGoHome = () => {
     const savedUser = localStorage.getItem('@App:user'); // Certifique-se de que a chave é essa mesma
@@ -150,12 +154,14 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             isOpen={isOpen} 
             onClick={() => navigate('/deviceinsights')} 
           />
-          <SidebarItem 
-            icon={<Bug size={24} />} 
-            text="Teste" 
-            isOpen={isOpen} 
-            onClick={() => navigate('/test')} 
-          />
+          {isAdmin && (
+            <SidebarItem 
+              icon={<Bug size={24} />} 
+              text="Teste" 
+              isOpen={isOpen} 
+              onClick={() => navigate('/test')} 
+            />
+          )}
       </nav>
 
       {/* --- BOTÃO DE TEMA --- */}
