@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Search, Eye, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Search, Eye } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,7 +28,7 @@ export interface NonConformity {
 
 const filterSchema = z.object({
   equipment: z.string().optional(),
-  sector: z.string().optional(),
+  sector: z.string().min(1, "Setor obrigatório"),
   dateInit: z.string().min(1, "Data inicial obrigatória"),
   dateEnd: z.string().min(1, "Data final obrigatória"),
 });
@@ -44,7 +44,7 @@ export function Inconformes() {
   const [loading, setLoading] = useState(false);
 
   const userRaw = localStorage.getItem('@App:user');
-  const user = userRaw ? JSON.parse(userRaw) : null;
+  const user = useMemo(() => userRaw ? JSON.parse(userRaw) : null, [userRaw]);
   const isAdmin = user?.role === 'ADMIN';
 
   const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
@@ -52,16 +52,24 @@ export function Inconformes() {
     hour: '2-digit', minute: '2-digit',
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  // Definição das datas padrão: Ontem e Hoje
+  const defaultDates = useMemo(() => {
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    return {
+      start: yesterday.toISOString().split('T')[0],
+      end: today.toISOString().split('T')[0]
+    };
+  }, []);
 
-  // Adicionado setValue para poder resetar campos programaticamente
-  const { register, handleSubmit, watch, setValue } = useForm<FilterFormData>({
+  const { register, handleSubmit, watch, setValue, getValues } = useForm<FilterFormData>({
     resolver: zodResolver(filterSchema),
     defaultValues: { 
         equipment: 'todos',
-        sector: 'LABORATORY',
-        dateInit: '2026-01-01',
-        dateEnd: today
+        sector: isAdmin ? 'LABORATORY' : user?.sector,
+        dateInit: defaultDates.start,
+        dateEnd: defaultDates.end
     }
   });
 
@@ -78,7 +86,7 @@ export function Inconformes() {
     };
   };
 
-  const fetchData = async (formData: FilterFormData) => {
+  const fetchData = useCallback(async (formData: FilterFormData) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('@App:token');
@@ -98,23 +106,36 @@ export function Inconformes() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setAllInconformidades(response.data);
+      const sanitizedData = Array.isArray(response.data) 
+        ? response.data.filter((item: NonConformity) => {
+            const date = new Date(item.startTimestamp).getTime();
+            return date > 0; 
+          })
+        : [];
+
+      setAllInconformidades(sanitizedData);
     } catch (error) {
       console.error("Erro ao buscar inconformidades:", error);
+      setAllInconformidades([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAdmin, user]);
 
-  // 1. EFEITO PARA ADMIN: Quando trocar o setor, busca novos dados e reseta o select de equipamento
+  // Busca inicial
+  useEffect(() => {
+    fetchData(getValues());
+  }, [fetchData, getValues]);
+
+  // Admin: Troca de setor reseta equipamento e busca novos dados
   useEffect(() => {
     if (isAdmin && watchedSector) {
-      setValue('equipment', 'todos'); // Reseta o filtro de aparelhos para não conflitar
-      fetchData(watch());
+      setValue('equipment', 'todos');
+      fetchData(getValues());
     }
-  }, [watchedSector]);
+  }, [watchedSector, isAdmin, setValue, fetchData, getValues]);
 
-  // 2. FILTRO LOCAL: Atualiza a tabela baseada no select de equipamento
+  // Filtro local (Client-side) para equipamentos
   useEffect(() => {
     if (selectedEquipment === 'todos') {
       setFilteredData(allInconformidades);
@@ -123,17 +144,21 @@ export function Inconformes() {
     }
   }, [selectedEquipment, allInconformidades]);
 
-  // Busca inicial
-  useEffect(() => {
-    fetchData(watch());
-  }, []);
-
   const handleOpenPopup = (item: NonConformity) => {
     setSelectedInconformity(item);
     setIsModalOpen(true);
   };
 
-  const uniqueEquipments = Array.from(new Set(allInconformidades.map(item => item.device.equipment)));
+  const formatSafeDate = (dateString: string) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime()) || date.getFullYear() < 2000) return "N/A";
+    return dateFormatter.format(date);
+  };
+
+  const uniqueEquipments = useMemo(() => 
+    Array.from(new Set(allInconformidades.map(item => item.device.equipment))),
+    [allInconformidades]
+  );
 
   return (
     <div className="flex h-screen w-full bg-zinc-200 dark:bg-zinc-950 transition-colors duration-500">
@@ -157,7 +182,6 @@ export function Inconformes() {
                   {...register('sector')} 
                   className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none focus:ring-2 cursor-pointer focus:ring-primary transition-all text-sm"
                 >
-                  <option value="todos">Todos os setores</option>
                   {Object.entries(SECTOR_TRANSLATIONS).map(([key, value]) => (
                     <option key={key} value={key}>{value}</option>
                   ))}
@@ -169,7 +193,7 @@ export function Inconformes() {
               <label className="text-sm font-bold text-zinc-600 dark:text-zinc-400 ml-1">Equipamento</label>
               <select 
                 {...register('equipment')} 
-                disabled={loading} // Desabilita enquanto carrega o novo setor
+                disabled={loading}
                 className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none focus:ring-2 cursor-pointer focus:ring-primary transition-all text-sm disabled:opacity-50"
               >
                 <option value="todos">Todos equipamentos</option>
@@ -196,7 +220,6 @@ export function Inconformes() {
           </form>
         </section>
 
-        {/* ... restante do código (Tabela e Modal) permanece igual ... */}
         <div className="mx-7 mb-4">
             <span className="bg-primary/10 text-primary dark:bg-secondary/10 dark:text-secondary px-4 py-1.5 rounded-full text-xs font-bold border border-primary/20">
                 {filteredData.length} registros encontrados
@@ -226,8 +249,8 @@ export function Inconformes() {
                         const details = getMeasurementDetails(item);
                         return (
                           <tr key={item.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
-                              <td className="px-6 py-4 text-sm">{dateFormatter.format(new Date(item.startTimestamp))}</td>
-                              <td className="px-6 py-4 text-sm">{dateFormatter.format(new Date(item.endTimestamp))}</td>
+                              <td className="px-6 py-4 text-sm">{formatSafeDate(item.startTimestamp)}</td>
+                              <td className="px-6 py-4 text-sm">{formatSafeDate(item.endTimestamp)}</td>
                               <td className="px-6 py-4 text-center">
                                   <span className={`${details.styles} px-3 py-1 rounded-lg text-xs font-bold`}>
                                       {item.averageValueNonConformity.toFixed(1)}{details.unit}
@@ -254,7 +277,7 @@ export function Inconformes() {
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           data={selectedInconformity} 
-          onSuccess={() => fetchData(watch())} 
+          onSuccess={() => fetchData(getValues())} 
         />
       </main>
     </div>
