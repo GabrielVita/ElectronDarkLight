@@ -69,7 +69,6 @@ export function Relatorios() {
       const user = JSON.parse(userRaw);
       const sector = user.sector;
       const role = user.role;
-
       const url = role === 'ADMIN' 
         ? 'http://192.168.1.3:8087/api/reports/all' 
         : 'http://192.168.1.3:8087/api/reports/sector';
