@@ -207,8 +207,16 @@ export function DeviceCard({ device, startDate, endDate }: any) {
               />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} allowDecimals={false} />
               <Tooltip 
-                cursor={{fill: 'transparent'}}
-                contentStyle={{ borderRadius: '12px', border: 'none', fontWeight: 'bold' }}
+                cursor={{ fill: 'transparent' }}
+                contentStyle={{ 
+                  borderRadius: '12px', 
+                  border: 'none', 
+                  fontWeight: 'bold',
+                  backgroundColor: '#18181b', // Força um fundo escuro elegante (zinco-900)
+                  color: '#fff'               // Força o texto geral para branco
+                }}
+                labelStyle={{ color: '#a1a1aa' }} // Cor do título do mês (zinco-400)
+                itemStyle={{ color: '#eb4034' }}  // Cor do valor (Qtd) em âmbar/laranja
               />
               <Bar dataKey="count" name="Qtd" radius={[6, 6, 0, 0]} barSize={40}>
                 {ncChartData.map((entry, index) => (
