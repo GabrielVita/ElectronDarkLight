@@ -1,185 +1,171 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import axios from 'axios';
-import { Thermometer, History, RefreshCw, Clock } from 'lucide-react';
-// Importações do Recharts
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, ReferenceArea 
-} from 'recharts';
+  Thermometer, 
+  RefreshCw, 
+  Search, 
+  Settings, 
+  Database,
+  FlaskConical, // Ícone para Laboratory
+  Activity
+} from 'lucide-react';
+
+// INTERFACE ATUALIZADA COM SEU JSON
+interface Device {
+  id: string;
+  name: string;
+  branch: string;
+  function: string;
+  deviceType: string;
+  sensor: string;
+  equipment: string;
+  tag: string;
+  sector: string;
+  ip: string;
+  patrimony: number;
+  minWorkingTemp: number;
+  maxWorkingTemp: number;
+  isBeingUsed: boolean;
+}
 
 export function Test() {
   const [isOpen, setIsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [momentLog, setMomentLog] = useState<string>('');
-  const [historyLog, setHistoryLog] = useState<string>('');
-  const [currentTemp, setCurrentTemp] = useState<number | null>(null);
-  // Novo estado para o gráfico
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const deviceId = "febf1956-d084-4fa0-8e25-fc2f4fc1551d";
-
-  const handleTestRequest = useCallback(async () => {
+  const fetchAllDevices = useCallback(async () => {
     setIsLoading(true);
-
     try {
       const token = localStorage.getItem('@App:token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      const now = new Date();
-      // Ajuste para 30 minutos
-      const tempo = new Date(now.getTime() - (120 * 60 * 1000));
-
-      const endIso = now.toISOString();       
-      const startIso = tempo.toISOString();
-
-      console.log("Sincronizando últimos 30min (UTC):", startIso, "até", endIso);
-
-      const [momentRes, historyRes] = await Promise.all([
-        axios.get(`http://192.168.1.3:8087/api/devices/${deviceId}/readings/moment?type=TEMPERATURE`, config),
-        axios.get(`http://192.168.1.3:8087/api/devices/${deviceId}/readings?type=TEMPERATURE&start=${startIso}&end=${endIso}`, config)
-      ]);
-
-      // Atualiza o Card Principal
-      const mValue = momentRes.data.value !== undefined ? momentRes.data.value : momentRes.data;
-      setCurrentTemp(mValue);
-      setMomentLog(JSON.stringify(momentRes.data, null, 2));
-
-      // Formata os dados para o Gráfico (Recharts)
-      const formattedHistory = historyRes.data.map((item: any) => {
-        const dateObj = new Date(item.timestamp);
-        return {
-          ...item,
-          // Esta será a string exibida no Eixo X
-          eixoFormatado: dateObj.toLocaleString('pt-BR', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
-          dataCompleta: dateObj.toLocaleString('pt-BR', { 
-            day: '2-digit', month: '2-digit', year: '2-digit', 
-            hour: '2-digit', minute: '2-digit', second: '2-digit' 
-          }),
-          temperature: item.value
-        };
-      }).reverse();
-
-      setChartData(formattedHistory);
-      setHistoryLog(JSON.stringify(formattedHistory, null, 2));
-
+      const response = await axios.get('http://192.168.1.3:8087/api/devices', config);
+      
+      // Se a resposta vier direto como array, setDevices(response.data)
+      // Se vier dentro de um objeto, ajuste para response.data.content ou similar
+      setDevices(Array.isArray(response.data) ? response.data : []);
+      
     } catch (error: any) {
       console.error("Erro na requisição:", error);
-      setHistoryLog(`Erro: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
-  }, [deviceId]);
+  }, []);
 
   useEffect(() => {
-    handleTestRequest();
-  }, [handleTestRequest]);
+    fetchAllDevices();
+  }, [fetchAllDevices]);
+
+  const filteredDevices = devices.filter(d => 
+    d.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    d.sector?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    d.tag?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="flex h-screen w-full bg-zinc-200 dark:bg-zinc-950 transition-colors duration-500">
+    <div className="flex h-screen w-full bg-zinc-100 dark:bg-zinc-950 transition-colors duration-500">
       <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
 
-      <main className="flex-1 flex flex-col relative overflow-hidden bg-primary/15 dark:bg-zinc-950">
-        <header className="p-8 flex justify-between items-center">
+      <main className="flex-1 flex flex-col relative overflow-hidden">
+        <header className="p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">Série Histórica</h1>
-            <p className="text-sm text-zinc-500 font-mono">{deviceId}</p>
+            <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
+              <Settings className="text-primary" size={24} /> Gerenciamento de Sensores
+            </h1>
+            <p className="text-sm text-zinc-500 font-medium">Lista de dispositivos cadastrados no sistema</p>
           </div>
-          <button 
-            onClick={handleTestRequest}
-            disabled={isLoading}
-            className="flex items-center gap-2 bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl text-sm font-semibold border border-zinc-200 dark:border-zinc-700 hover:border-primary transition-all cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            Atualizar Dados
-          </button>
+
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="Buscar por nome, tag ou setor..."
+                className="w-full pl-10 pr-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <button 
+              onClick={fetchAllDevices}
+              className="p-2.5 bg-primary text-white rounded-xl hover:opacity-90 transition-all cursor-pointer"
+            >
+              <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </header>
 
-        <section className="flex-1 px-8 pb-8 overflow-y-auto grid grid-cols-1 gap-6">
-          
-          {/* CARD DE TEMPERATURA ATUAL */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                <div>
-                  <div className='flex items-center gap-2 mb-1'>
-                    <Thermometer className='text-red-500' size={18}/>
-                    <span className="text-xs font-bold text-zinc-500 uppercase">Leitura Atual</span>
+        <section className="flex-1 p-8 overflow-y-auto bg-zinc-50 dark:bg-zinc-950">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredDevices.map((device) => (
+              <div 
+                key={device.id}
+                className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden group hover:border-primary/50 transition-all"
+              >
+                {/* Topo do Card: Identificação */}
+                <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/20">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
+                      <FlaskConical className="text-primary" size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-zinc-800 dark:text-zinc-100 leading-none">{device.name}</h3>
+                      <span className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">{device.tag}</span>
+                    </div>
                   </div>
-                  <p className="text-4xl font-bold text-zinc-900 dark:text-white">
-                    {currentTemp !== null ? `${currentTemp}°C` : '--'}
-                  </p>
+                  <div className={`h-2.5 w-2.5 rounded-full ${device.isBeingUsed ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300'}`} />
                 </div>
-                <Clock className="text-zinc-200 dark:text-zinc-800" size={48} />
+
+                {/* Conteúdo: Info Técnica */}
+                <div className="p-5 grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-400 uppercase font-bold">Setor</span>
+                    <p className="text-sm dark:text-zinc-200 font-medium">{device.sector}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-400 uppercase font-bold">Patrimônio</span>
+                    <p className="text-sm dark:text-zinc-200 font-medium">{device.patrimony}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-400 uppercase font-bold">Hardware</span>
+                    <p className="text-sm dark:text-zinc-200 font-medium">{device.deviceType} / {device.sensor}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-400 uppercase font-bold">IP</span>
+                    <p className="text-sm dark:text-zinc-200 font-mono">{device.ip}</p>
+                  </div>
+                </div>
+
+                {/* Rodapé: Limites de Operação */}
+                <div className="px-5 py-4 bg-zinc-50 dark:bg-zinc-800/40 flex items-center justify-between">
+                   <div className="flex gap-4">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-red-400 uppercase font-bold">Max</span>
+                        <span className="text-sm font-bold dark:text-white">{device.maxWorkingTemp}°C</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-blue-400 uppercase font-bold">Min</span>
+                        <span className="text-sm font-bold dark:text-white">{device.minWorkingTemp}°C</span>
+                      </div>
+                   </div>
+                   <button className="flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary hover:text-white transition-all cursor-pointer">
+                      <Activity size={14} />
+                      Logs
+                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Fallback se não houver dados */}
+          {filteredDevices.length === 0 && !isLoading && (
+             <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
+                <Database size={40} className="mb-2 opacity-20" />
+                <p>Nenhum dado recebido do endpoint.</p>
              </div>
-          </div>
-
-          {/* GRÁFICO DE LINHA */}
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col min-h-[450px]">
-            <div className='flex items-center gap-3 mb-6'>
-              <History className='text-primary' size={24}/>
-              <h2 className="text-lg font-semibold dark:text-zinc-100">Variação das últimas 24h</h2>
-            </div>
-
-            <div className="flex-1 w-full h-full min-h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                  <XAxis 
-                    dataKey="eixoFormatado" // Agora usa "13/03 14:30"
-                    stroke="#888" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false}
-                    // Aumentamos o intervalo para não encavalar os textos, já que agora são maiores
-                    interval={Math.floor(chartData.length / 6)} 
-                  />
-
-                  <Tooltip 
-                    labelFormatter={(value, payload) => {
-                      // Exibe a data completa com segundos no topo do balão
-                      if (payload && payload.length > 0) {
-                        return payload[0].payload.dataCompleta;
-                      }
-                      return value;
-                    }}
-                    contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '8px', color: '#fff' }}
-                    itemStyle={{ color: '#10b981' }}
-                  />
-                  <YAxis 
-                    stroke="#888" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    domain={['dataMin - 2', 'dataMax + 2']}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '8px', color: '#fff' }}
-                    itemStyle={{ color: '#10b981' }}
-                  />
-                  
-                  {/* FAIXAS DE CORES (EXEMPLO) */}
-                  <ReferenceArea y1={23} y2={25} fill="red" fillOpacity={0.1} />
-                  <ReferenceArea y1={20} y2={23} fill="green" fillOpacity={0.1} />
-                  <ReferenceArea y1={18} y2={20} fill="orange" fillOpacity={0.1} />
-
-                  <Line 
-                    type="monotone" 
-                    dataKey="temperature" 
-                    stroke="#10b981" 
-                    strokeWidth={3} 
-                    dot={false} 
-                    activeDot={{ r: 6 }}
-                    animationDuration={1500}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          )}
         </section>
       </main>
     </div>

@@ -1,14 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import axios, { AxiosError } from 'axios'; // 1. Importe AxiosError
+import { DeviceDetailsModal } from '../components/DeviceDetailsModal';
+import { translateSector } from '../utils/translations';
 
 interface Device {
   id: string;
+  name: string;      // Adicionado
   equipment: string;
   isBeingUsed: boolean;
   sector: string;
   branch: string;
   function: string;
+  deviceType: string; // Adicionado
+  sensor: string;     // Adicionado
+  ip: string;         // Adicionado
+  patrimony: number;  // Adicionado
+  tag: string;        // Adicionado
   minWorkingTemp: number | null;
   maxWorkingTemp: number | null;
   minWorkingHumidity: number | null;
@@ -31,6 +39,9 @@ export function Dashboard() {
   const [usedCount, setUsedCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [readings, setReadings] = useState<Record<string, ReadingData>>({});
+
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchReadingType = async (deviceId: string, type: 'TEMPERATURE' | 'HUMIDITY', token: string) => {
     try {
@@ -65,21 +76,11 @@ export function Dashboard() {
       const userRole = user.role;
       let data;
       const userSector = user.sector;
+      const response = await axios.get(`http://192.168.1.3:8087/api/devices`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-      if(userRole == "ADMIN"){
-        const response = await axios.get(`http://192.168.1.3:8087/api/devices/user/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        data = response.data;
-      }else if(userRole == "USER"){
-        const response = await axios.get(`http://192.168.1.3:8087/api/devices/sector/${userSector}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        data = response.data;
-      }
-
+      data = response.data;
       
       if (Array.isArray(data)) {
         setDevices(data); 
@@ -153,7 +154,7 @@ export function Dashboard() {
           </header>
 
           <section className="p-8 pt-0 overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-xl gap-y-3 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col items-start justify-between text-zinc-800 dark:text-zinc-400">
                   <div>Equipamentos</div>
                   <div className='flex flex-row w-full justify-between items-center'>
@@ -209,8 +210,11 @@ export function Dashboard() {
                     Equipamento
                   </th>
                   <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider text-center">
-                    Inconformidades
+                    Setor
                   </th>
+                  {/* <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider text-center">
+                    Inconformidades
+                  </th> */}
                   <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider">
                     Temp. Recente
                   </th>
@@ -254,9 +258,14 @@ export function Dashboard() {
                             {item.equipment}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          --
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-semibold px-2 py-1 text-center bg-zinc-100 dark:bg-zinc-800 rounded-md text-zinc-500 ">
+                            {translateSector(item.sector)}
+                          </span>
                         </td>
+                        {/* <td className="px-6 py-4 text-center">
+                          --
+                        </td> */}
                         <td className={`px-6 py-4 text-base ${tempClass}`}>
                           {tempDisplay}
                         </td>
@@ -265,7 +274,10 @@ export function Dashboard() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button 
-                            onClick={() => console.log(`Ver mais de ${item.id}`)}
+                            onClick={() => {
+                              setSelectedDevice(item);
+                              setIsModalOpen(true);
+                            }}
                             className="bg-primary/10 text-primary dark:bg-secondary/10 dark:text-secondary px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-primary hover:text-white dark:hover:bg-secondary dark:hover:text-zinc-900 transition-all cursor-pointer"
                           >
                             Ver mais
@@ -285,6 +297,11 @@ export function Dashboard() {
               </tbody>
             </table>
         </div>
+        <DeviceDetailsModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          device={selectedDevice} 
+        />
 
       </main>
     </div>
