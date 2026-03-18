@@ -7,9 +7,8 @@ import axios from 'axios';
 import { Sidebar } from '../components/Sidebar';
 import { ModalDetails } from '../components/ModalDetails';
 import { TitleBar } from '../components/TitleBar';
-import { SECTOR_TRANSLATIONS } from '../utils/translations'; // Importe suas traduções aqui
+import { SECTOR_TRANSLATIONS } from '../utils/translations';
 
-// Interface mantida
 export interface NonConformity {
   id: string;
   startTimestamp: string;
@@ -29,7 +28,7 @@ export interface NonConformity {
 
 const filterSchema = z.object({
   equipment: z.string().optional(),
-  sector: z.string().optional(), // Novo campo para Admin
+  sector: z.string().optional(),
   dateInit: z.string().min(1, "Data inicial obrigatória"),
   dateEnd: z.string().min(1, "Data final obrigatória"),
 });
@@ -44,7 +43,6 @@ export function Inconformes() {
   const [filteredData, setFilteredData] = useState<NonConformity[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Identificação do Usuário
   const userRaw = localStorage.getItem('@App:user');
   const user = userRaw ? JSON.parse(userRaw) : null;
   const isAdmin = user?.role === 'ADMIN';
@@ -56,15 +54,19 @@ export function Inconformes() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const { register, handleSubmit, watch } = useForm<FilterFormData>({
+  // Adicionado setValue para poder resetar campos programaticamente
+  const { register, handleSubmit, watch, setValue } = useForm<FilterFormData>({
     resolver: zodResolver(filterSchema),
     defaultValues: { 
         equipment: 'todos',
-        sector: 'LABORATORY', // Default para admin
+        sector: 'LABORATORY',
         dateInit: '2026-01-01',
         dateEnd: today
     }
   });
+
+  const watchedSector = watch('sector');
+  const selectedEquipment = watch('equipment');
 
   const getMeasurementDetails = (item: NonConformity) => {
     const isHumidity = item.type === 'HUMIDITY' || item.device.function === 'HUMIDITY';
@@ -82,7 +84,6 @@ export function Inconformes() {
       const token = localStorage.getItem('@App:token');
       if (!token || !user) return;
 
-      // DEFINIÇÃO DA URL E PAYLOAD BASEADO NO ROLE
       const url = isAdmin 
         ? 'http://192.168.1.3:8087/api/nonconformities/period'
         : 'http://192.168.1.3:8087/api/nonconformities/resolved/no-action';
@@ -105,9 +106,15 @@ export function Inconformes() {
     }
   };
 
-  const selectedEquipment = watch('equipment');
+  // 1. EFEITO PARA ADMIN: Quando trocar o setor, busca novos dados e reseta o select de equipamento
+  useEffect(() => {
+    if (isAdmin && watchedSector) {
+      setValue('equipment', 'todos'); // Reseta o filtro de aparelhos para não conflitar
+      fetchData(watch());
+    }
+  }, [watchedSector]);
 
-  // Filtro local por equipamento (apenas se não for admin ou se quiser filtrar dentro do setor baixado)
+  // 2. FILTRO LOCAL: Atualiza a tabela baseada no select de equipamento
   useEffect(() => {
     if (selectedEquipment === 'todos') {
       setFilteredData(allInconformidades);
@@ -116,6 +123,7 @@ export function Inconformes() {
     }
   }, [selectedEquipment, allInconformidades]);
 
+  // Busca inicial
   useEffect(() => {
     fetchData(watch());
   }, []);
@@ -139,51 +147,56 @@ export function Inconformes() {
            </h1>
         </header>
 
-        {/* FILTROS DINÂMICOS */}
         <section className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm mb-8 mx-7">
-            <form onSubmit={handleSubmit(fetchData)} className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                
-                {isAdmin ? (
-                  /* SELECT DE SETOR PARA ADMIN */
-                  <div className="flex flex-col gap-2">
-                      <label className="text-sm font-bold text-zinc-600 dark:text-zinc-400 ml-1">Setor</label>
-                      <select {...register('sector')} className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none focus:ring-2 cursor-pointer focus:ring-primary transition-all">
-                          {Object.entries(SECTOR_TRANSLATIONS).map(([key, value]) => (
-                              <option key={key} value={key}>{value}</option>
-                          ))}
-                      </select>
-                  </div>
-                ) : (
-                  /* SELECT DE EQUIPAMENTO PARA USER */
-                  <div className="flex flex-col gap-2">
-                      <label className="text-sm font-bold text-zinc-600 dark:text-zinc-400 ml-1">Equipamento</label>
-                      <select {...register('equipment')} className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none focus:ring-2 cursor-pointer focus:ring-primary transition-all">
-                          <option value="todos">Todos os equipamentos</option>
-                          {uniqueEquipments.map((name, idx) => (
-                              <option key={idx} value={name}>{name}</option>
-                          ))}
-                      </select>
-                  </div>
-                )}
+          <form onSubmit={handleSubmit(fetchData)} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            
+            {isAdmin && (
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-zinc-600 dark:text-zinc-400 ml-1">Setor</label>
+                <select 
+                  {...register('sector')} 
+                  className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none focus:ring-2 cursor-pointer focus:ring-primary transition-all text-sm"
+                >
+                  <option value="todos">Todos os setores</option>
+                  {Object.entries(SECTOR_TRANSLATIONS).map(([key, value]) => (
+                    <option key={key} value={key}>{value}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-zinc-600 dark:text-zinc-400 ml-1">Início em:</label>
-                  <input type="date" {...register('dateInit')} onClick={(e) => e.currentTarget.showPicker()} className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none cursor-pointer" />
-                </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-zinc-600 dark:text-zinc-400 ml-1">Equipamento</label>
+              <select 
+                {...register('equipment')} 
+                disabled={loading} // Desabilita enquanto carrega o novo setor
+                className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none focus:ring-2 cursor-pointer focus:ring-primary transition-all text-sm disabled:opacity-50"
+              >
+                <option value="todos">Todos equipamentos</option>
+                {uniqueEquipments.map((name, idx) => (
+                  <option key={idx} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
 
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-zinc-600 dark:text-zinc-400 ml-1">Término em:</label>
-                    <input type="date" {...register('dateEnd')} onClick={(e) => e.currentTarget.showPicker()} className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none cursor-pointer" />
-                </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-zinc-600 dark:text-zinc-400 ml-1">Início</label>
+              <input type="date" {...register('dateInit')} onClick={(e) => e.currentTarget.showPicker()} className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none cursor-pointer text-sm" />
+            </div>
 
-                <button type="submit" disabled={loading} className="bg-primary dark:bg-secondary xl:transition xl:duration-700 xl:ease-in-out xl:hover:scale-105 cursor-pointer text-white dark:text-zinc-900 py-2.5 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2">
-                    <Search size={18} />
-                    {loading ? "Buscando..." : "Pesquisar"}
-                </button>
-            </form>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-zinc-600 dark:text-zinc-400 ml-1">Término</label>
+              <input type="date" {...register('dateEnd')} onClick={(e) => e.currentTarget.showPicker()} className="w-full px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl outline-none cursor-pointer text-sm" />
+            </div>
+
+            <button type="submit" disabled={loading} className="bg-primary dark:bg-secondary xl:transition xl:duration-700 xl:ease-in-out xl:hover:scale-105 cursor-pointer text-white dark:text-zinc-900 py-2.5 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 h-[44px]">
+              <Search size={18} />
+              {loading ? "..." : "Pesquisar"}
+            </button>
+          </form>
         </section>
 
-        {/* CONTADOR E TABELA (MANTIDOS) */}
+        {/* ... restante do código (Tabela e Modal) permanece igual ... */}
         <div className="mx-7 mb-4">
             <span className="bg-primary/10 text-primary dark:bg-secondary/10 dark:text-secondary px-4 py-1.5 rounded-full text-xs font-bold border border-primary/20">
                 {filteredData.length} registros encontrados
