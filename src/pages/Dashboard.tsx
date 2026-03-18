@@ -196,7 +196,7 @@ export function Dashboard() {
       <main className="flex-1 flex flex-col relative overflow-hidden bg-primary/15 dark:bg-zinc-950">
         
         <header className="p-8">
-          <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+          <h1 className="text-2xl mt-2 font-bold text-zinc-800 dark:text-zinc-100">
             Sensores e informações gerais
           </h1>
           <p className="text-zinc-500">Monitoramento em tempo real</p>
@@ -207,7 +207,7 @@ export function Dashboard() {
             {/* Card 1: Equipamentos */}
             <div className="text-xl gap-y-3 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col items-start justify-between text-zinc-800 dark:text-zinc-400">
                 <div>Equipamentos</div>
-                <div className='flex flex-row w-full justify-between items-center text-sm font-semibold text-zinc-500'>
+                <div className='flex flex-row w-full justify-between items-center text-md font-semibold text-zinc-500'>
                   <div>Totais</div>
                   <div>Ativos</div>
                 </div>
@@ -284,7 +284,7 @@ export function Dashboard() {
             </div>
           </div>
         
-          <div className="mt-6 mx-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-l-3xl rounded-tr-sm shadow-sm flex-1 mb-8 relative overflow-y-auto 
+          <div className=" mx-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-l-3xl rounded-tr-sm shadow-sm flex-1 mb-8 relative overflow-y-auto 
             [&::-webkit-scrollbar]:w-2
             [&::-webkit-scrollbar-track]:bg-transparent
             [&::-webkit-scrollbar-thumb]:bg-zinc-300
