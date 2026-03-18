@@ -65,14 +65,14 @@ export function DeviceCard({ device, startDate, endDate }: any) {
   const fetchNonConformities = useCallback(async () => {
     try {
       const token = localStorage.getItem('@App:token');
-      const user = JSON.parse(localStorage.getItem('@App:user') || '{}');
+      //const user = JSON.parse(localStorage.getItem('@App:user') || '{}');
       
       const now = new Date();
       // Início de 2 meses atrás (Ex: se hoje é 16/Março, pega 01/Janeiro)
       const firstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1);
       
       const response = await axios.post('http://192.168.1.3:8087/api/nonconformities/resolved/no-action', {
-        sector: user.sector,
+        sector: device.sector,
         startDate: firstDay.toISOString().split('T')[0],
         endDate: now.toISOString().split('T')[0]
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -115,7 +115,7 @@ export function DeviceCard({ device, startDate, endDate }: any) {
     } catch (err) {
       console.error("Erro NC:", err);
     }
-  }, [device.id]);
+  }, [device.id, device.sector]);
 
   useEffect(() => {
     fetchReadings();
@@ -123,7 +123,7 @@ export function DeviceCard({ device, startDate, endDate }: any) {
   }, [fetchReadings, fetchNonConformities]);
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 shadow-sm border border-zinc-200 dark:border-zinc-800 flex flex-col gap-6 relative min-h-[600px]">
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl p-8 shadow-sm border border-zinc-200 dark:border-zinc-800 flex flex-col gap-6 relative min-h-[600px]">
       {isLoading && (
         <div className="absolute inset-0 bg-white/50 dark:bg-black/20 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-[2.5rem]">
           <Activity className="animate-spin text-primary" />
