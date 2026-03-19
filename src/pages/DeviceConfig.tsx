@@ -2,12 +2,14 @@ import { useState } from 'react';
 import axios from 'axios';
 import { Sidebar } from '../components/Sidebar';
 import { TitleBar } from '../components/TitleBar';
-import { LayoutDashboard, Save, Laptop, Thermometer, Droplets, User } from 'lucide-react';
+import { HelpModal } from '../components/HelpModal';
+import { LayoutDashboard, Save, Laptop, Thermometer, HelpCircle, User, Cpu } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast'; // Sugestão para feedback visual
 
 export function DeviceConfig() {
   const [isOpen, setIsOpen] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [helpTarget, setHelpTarget] = useState<{ title: string; options: string[] } | null>(null);
 
   // Busca o ID do usuário logado
   const savedUser = localStorage.getItem('@App:user');
@@ -97,7 +99,7 @@ export function DeviceConfig() {
         <header className="p-8 flex flex-col gap-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-primary dark:bg-secondary rounded-2xl text-white shadow-lg">
-              <LayoutDashboard className='text-white dark:text-zinc-900' size={24} />
+              <Cpu className='text-white dark:text-zinc-900' size={24} />
             </div>
             <div>
               <h1 className="text-2xl font-black text-zinc-800 dark:text-zinc-100 uppercase tracking-tighter leading-none">Cadastrar Equipamento</h1>
@@ -180,7 +182,17 @@ export function DeviceConfig() {
             <FormField label="Tag" name="tag" value={formData.tag} onChange={handleChange} placeholder="TAG-XYZ" />
             
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Modelo Device</label>
+              <div className="flex items-center justify-between px-1">
+                <label className="text-xs font-bold text-zinc-500 uppercase">Modelo Device</label>
+                <button 
+                  type="button" // Importante: type="button" para não submeter o form
+                  title="Ajuda para saber qual"
+                  onClick={() => setHelpTarget({ title: 'Modelos de Dispositivos', options: ['THR316', 'THR316D', 'TH16RF', 'TH'] })}
+                  className="text-primary dark:text-secondary hover:scale-110 transition-transform cursor-pointer"
+                >
+                  <HelpCircle size={14} />
+                </button>
+              </div>
               <select 
                 name="deviceType"
                 required
@@ -196,7 +208,17 @@ export function DeviceConfig() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Modelo Sensor</label>
+              <div className="flex items-center justify-between px-1">
+                <label className="text-xs font-bold text-zinc-500 uppercase">Modelo Sensor</label>
+                <button 
+                  type="button"
+                  title="Ajuda para saber qual"
+                  onClick={() => setHelpTarget({ title: 'Modelos de Sensores', options: ['DS18B20', 'AM2301', 'SI7021', 'WTS01', 'DHT11'] })}
+                  className="text-primary dark:text-secondary hover:scale-110 transition-transform cursor-pointer"
+                >
+                  <HelpCircle size={14} />
+                </button>
+              </div>
               <select 
                 name="sensor"
                 required
@@ -262,10 +284,20 @@ export function DeviceConfig() {
             
           </form>
         </div>
+        {helpTarget && (
+          <HelpModal 
+            title={helpTarget.title} 
+            options={helpTarget.options} 
+            onClose={() => setHelpTarget(null)} 
+          />
+        )}
       </main>
     </div>
+    
   );
 }
+
+
 
 // Componente Auxiliar de Input para manter o código limpo
 function FormField({ label, name, type = 'text', value, onChange, placeholder }: any) {
