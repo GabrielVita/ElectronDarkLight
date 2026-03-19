@@ -142,8 +142,8 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 icon={<Signature size={24} />} 
                 text="Assinaturas" 
                 isOpen={isOpen} 
-                onClick={() => navigate('/assinaturas')}
-                isActive={location.pathname === '/assinaturas'}
+                onClick={() => navigate('/signatures')}
+                isActive={location.pathname === '/signatures'}
               />
               <SidebarItem 
                 icon={<User size={24} />} 

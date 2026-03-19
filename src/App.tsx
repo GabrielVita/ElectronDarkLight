@@ -11,6 +11,7 @@ import { Test } from './pages/Test';
 import { Menu } from './pages/Menu';
 import { DeviceInsights } from './pages/DeviceInsights';
 import { DeviceConfig } from './pages/DeviceConfig';
+import { Signatures } from './pages/Signatures';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path="/menu" element={<Menu />} />
             <Route path="/deviceinsights" element={<DeviceInsights />} />
             <Route path="/deviceconfig" element={<DeviceConfig />} />
+            <Route path="/signatures" element={<Signatures />} />
           </Routes>
         </div>
       </AuthProvider>  

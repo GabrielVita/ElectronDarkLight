@@ -174,7 +174,7 @@ export function DeviceConfig() {
             {/* Seção: Conectividade */}
             <div className="col-span-full border-b border-zinc-100 dark:border-zinc-800 pb-1 mt-2 mb-1 flex items-center gap-2 text-primary dark:text-secondary">
               <User size={16} />
-              <h2 className="font-black uppercase text-xs tracking-widest">Técnico & Rede</h2>
+              <h2 className="font-black uppercase text-xs tracking-widest">Técnico e Rede</h2>
             </div>
 
             <FormField label="Nome do Dispositivo" name="name" value={formData.name} onChange={handleChange} placeholder="Ex: TH16XX" />
@@ -242,28 +242,28 @@ export function DeviceConfig() {
             {/* Container que força os 4 campos na mesma linha em telas grandes */}
             <div className="col-span-full grid grid-cols-2 lg:grid-cols-4 gap-4">
               <FormField 
-                label="Temp. Mínima (°C)" 
+                label="Temperatura Mínima (°C)" 
                 name="minWorkingTemp" 
                 type="number" 
                 value={formData.minWorkingTemp} 
                 onChange={handleChange} 
               />
               <FormField 
-                label="Temp. Máxima (°C)" 
+                label="Temperatura Máxima (°C)" 
                 name="maxWorkingTemp" 
                 type="number" 
                 value={formData.maxWorkingTemp} 
                 onChange={handleChange} 
               />
               <FormField 
-                label="Hum. Mínima (%)" 
+                label="Umidade Mínima (%)" 
                 name="minWorkingHumidity" 
                 type="number" 
                 value={formData.minWorkingHumidity ?? ''} 
                 onChange={handleChange} 
               />
               <FormField 
-                label="Hum. Máxima (%)" 
+                label="Umidade Máxima (%)" 
                 name="maxWorkingHumidity" 
                 type="number" 
                 value={formData.maxWorkingHumidity ?? ''} 

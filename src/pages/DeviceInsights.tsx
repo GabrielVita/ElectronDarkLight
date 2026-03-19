@@ -113,9 +113,9 @@ export function DeviceInsights() {
         <header className="p-8 flex flex-col gap-6">
           <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary dark:bg-secondary rounded-2xl text-white shadow-lg">
+              {/* <div className="p-3 bg-primary dark:bg-secondary rounded-2xl text-white shadow-lg">
                 <LayoutDashboard className='text-white dark:text-zinc-900' size={24} />
-              </div>
+              </div> */}
               <div>
                 <h1 className="text-2xl font-black text-zinc-800 dark:text-zinc-100 uppercase tracking-tighter leading-none">Insights</h1>
                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-1">Análise de Ativos</p>
