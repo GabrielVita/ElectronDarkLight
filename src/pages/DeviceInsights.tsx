@@ -126,9 +126,9 @@ export function DeviceInsights() {
               <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 p-2 pl-4 rounded-3xl shadow-xl border border-zinc-200 dark:border-zinc-800">
                 {/* <Calendar size={16} className="text-primary" /> */}
                 <div className="flex items-center gap-2">
-                  <input type="datetime-local" value={tempStartDate} onChange={(e) => setTempStartDate(e.target.value)} className="bg-transparent text-md font-black outline-none dark:text-zinc-100 cursor-pointer" />
+                  <input type="datetime-local" value={tempStartDate} onChange={(e) => setTempStartDate(e.target.value)} className="bg-transparent text-md font-bold outline-none dark:text-zinc-100 cursor-pointer" />
                   <span className="text-xs font-black text-zinc-400">ATÉ</span>
-                  <input type="datetime-local" value={tempEndDate} onChange={(e) => setTempEndDate(e.target.value)} className="bg-transparent text-md font-black outline-none dark:text-zinc-100 cursor-pointer" />
+                  <input type="datetime-local" value={tempEndDate} onChange={(e) => setTempEndDate(e.target.value)} className="bg-transparent text-md font-bold outline-none dark:text-zinc-100 cursor-pointer" />
                 </div>
               </div>
               <button onClick={handleApplyFilter} disabled={loading} className="flex items-center gap-2 bg-primary dark:bg-secondary hover:bg-primary/90 dark:hover:bg-secondary/90 text-white dark:text-zinc-900 cursor-pointer px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-tighter transition-all active:scale-95 shadow-lg group">

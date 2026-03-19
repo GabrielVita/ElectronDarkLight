@@ -10,6 +10,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { Test } from './pages/Test';
 import { Menu } from './pages/Menu';
 import { DeviceInsights } from './pages/DeviceInsights';
+import { DeviceConfig } from './pages/DeviceConfig';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="/test" element={<Test />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/deviceinsights" element={<DeviceInsights />} />
+            <Route path="/deviceconfig" element={<DeviceConfig />} />
           </Routes>
         </div>
       </AuthProvider>  
