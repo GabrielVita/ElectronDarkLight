@@ -69,47 +69,66 @@ export function DeviceCard({ device, startDate, endDate }: any) {
     try {
       const token = localStorage.getItem('@App:token');
       const now = new Date();
+      // 3 meses atrás
       const firstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1);
       
-      const payload = {
-        sector: device.sector,
-        startDate: firstDay.toISOString().split('T')[0],
-        endDate: now.toISOString().split('T')[0]
-      };
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+      // FORMATO EXATO: YYYY-MM-DD
+      const dateInit = firstDay.toISOString().split('T')[0];
+      const dateEnd = now.toISOString().split('T')[0];
 
-      const [respNoAction, respTotal] = await Promise.all([
-        axios.post('http://192.168.1.3:8087/api/nonconformities/resolved/no-action', payload, config),
-        axios.post('http://192.168.1.3:8087/api/nonconformities/period', payload, config)
+      const payload = {
+        deviceId: device.id, // O nome da chave DEVE ser deviceId
+        startDate: dateInit,
+        endDate: dateEnd
+      };
+      
+      const config = { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      };
+
+      console.log("Enviando Payload NC:", payload); // Debug para conferir no console
+
+      const response = await axios.post('http://192.168.1.3:8087/api/nonconformities/period/device', payload, config);
+      
+      const allNcs = response.data || [];
+
+      // --- FILTROS ---
+      // 1. Apenas encerradas
+      const resolvedNcs = allNcs.filter((nc: any) => nc.endTimestamp !== null);
+
+      // 2. Separação para o PieChart
+      const ncsNoAction = resolvedNcs.filter((nc: any) => !nc.actionPlan || nc.actionPlan.trim() === "");
+      const ncsWithAction = resolvedNcs.filter((nc: any) => nc.actionPlan && nc.actionPlan.trim() !== "");
+
+      setPieData([
+        { name: 'Com Plano', value: ncsWithAction.length, color: '#10b981' },
+        { name: 'Sem Plano', value: ncsNoAction.length, color: '#eb4034' },
       ]);
 
-      const ncsNoAction = respNoAction.data.filter((nc: any) => nc.device.id === device.id && nc.endTimestamp !== null);
-      const ncsTotal = respTotal.data.filter((nc: any) => nc.device.id === device.id && nc.endTimestamp !== null);
-
-      // --- Lógica BarChart ---
+      // --- HISTÓRICO (BarChart) ---
       const monthsLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const last3 = [2, 1, 0].map(offset => {
         const d = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-        return { month: d.getMonth(), year: d.getFullYear(), name: monthsLabels[d.getMonth()], count: 0 };
+        return { 
+          month: d.getMonth(), 
+          year: d.getFullYear(), 
+          name: monthsLabels[d.getMonth()], 
+          count: 0 
+        };
       });
 
-      ncsNoAction.forEach((nc: any) => {
+      resolvedNcs.forEach((nc: any) => {
         const ncDate = new Date(nc.createdAt || nc.startTimestamp);
         const mIdx = last3.find(x => x.month === ncDate.getMonth() && x.year === ncDate.getFullYear());
         if (mIdx) mIdx.count++;
       });
 
-      // --- Lógica PieChart Corrigida ---
-      const noActionCount = ncsNoAction.length;
-      const withActionCount = Math.max(0, ncsTotal.length - noActionCount);
-      const totalPeriod = withActionCount + noActionCount;
+      setNcChartData(last3);
 
-      setPieData([
-        { name: 'Com Plano', value: withActionCount, color: '#10b981', total: totalPeriod },
-        { name: 'Sem Plano', value: noActionCount, color: '#eb4034', total: totalPeriod },
-      ]);
-
-      // Tendência
+      // --- TENDÊNCIA ---
       const current = last3[2].count;
       const previous = last3[1].count;
       if (previous > 0) {
@@ -119,11 +138,10 @@ export function DeviceCard({ device, startDate, endDate }: any) {
         setPercentageTrend(current > 0 ? { val: '100', up: true } : null);
       }
 
-      setNcChartData(last3);
-    } catch (err) {
-      console.error("Erro NC:", err);
+    } catch (err: any) {
+      console.error("Erro NC detalhado:", err.response?.data || err.message);
     }
-  }, [device.id, device.sector]);
+  }, [device.id]);
 
   useEffect(() => {
     fetchReadings();
@@ -228,12 +246,6 @@ export function DeviceCard({ device, startDate, endDate }: any) {
           <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-black text-xs uppercase italic">
             <AlertTriangle size={16} className="text-red-500" /> Visão de Não Conformidades
           </div>
-          {percentageTrend && (
-            <div className={`flex items-center gap-1 text-xs font-semibold ${percentageTrend.up ? 'text-red-500' : 'text-emerald-500'}`}>
-              {percentageTrend.up ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-              {percentageTrend.val}% pendências vs mês anterior
-            </div>
-          )}
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center h-40">
@@ -268,44 +280,58 @@ export function DeviceCard({ device, startDate, endDate }: any) {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            {percentageTrend && (
+              <div className={`flex items-center justify-end gap-1 text-xs font-semibold ${percentageTrend.up ? 'text-red-500' : 'text-emerald-500'}`}>
+                {percentageTrend.up ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                {percentageTrend.val}% pendências vs mês anterior
+              </div>
+            )}
           </div>
 
           {/* Gráfico de Pizza - Eficiência */}
           <div className="h-full flex flex-col items-center justify-center border-l border-zinc-200 dark:border-zinc-700">
-            <ResponsiveContainer width="100%" height="80%">
+          <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-black text-xs uppercase italic">Planos de Ações</div>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={pieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={30}
+                  // ALTERAÇÃO AQUI: De 30 para 0 para preencher o centro
+                  innerRadius={0} 
                   outerRadius={45}
-                  paddingAngle={5}
+                  paddingAngle={0} 
                   dataKey="value"
+                  stroke="none"
                 >
-                  {pieData.map((entry, index) => (
+                  {pieData.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip 
-                  // Corrigindo o erro de Tipagem do TS
-                  formatter={(value: any) => {
+                  formatter={(value: any, name: any) => {
                     const val = Number(value);
                     const total = pieData.reduce((acc: number, curr: any) => acc + curr.value, 0);
                     
-                    if (total === 0) return ["0%", "Proporção"];
+                    if (total === 0) return ["0", "Sem dados"];
                     
                     const percentage = ((val / total) * 100).toFixed(0);
-                    return [`${percentage}%`, "Status"];
+                    
+                    return [
+                      `${val} (${percentage}%)`,
+                      `${name}`
+                    ];
                   }}
                   contentStyle={{ 
                     borderRadius: '8px', 
                     border: 'none', 
                     backgroundColor: '#18181b', 
                     color: '#fff',
-                    fontSize: '11px'
+                    fontSize: '11px',
+                    padding: '8px'
                   }}
-                  itemStyle={{ fontWeight: 'bold' }}
+                  itemStyle={{ fontWeight: 'bold', color: '#fff' }}
+                  labelFormatter={() => ""}
                 />
               </PieChart>
             </ResponsiveContainer>

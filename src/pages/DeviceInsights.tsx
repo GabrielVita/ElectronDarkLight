@@ -113,8 +113,8 @@ export function DeviceInsights() {
         <header className="p-8 flex flex-col gap-6">
           <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary rounded-2xl text-white shadow-lg">
-                <LayoutDashboard size={24} />
+              <div className="p-3 bg-primary dark:bg-secondary rounded-2xl text-white shadow-lg">
+                <LayoutDashboard className='text-white dark:text-zinc-900' size={24} />
               </div>
               <div>
                 <h1 className="text-2xl font-black text-zinc-800 dark:text-zinc-100 uppercase tracking-tighter leading-none">Insights</h1>
@@ -124,15 +124,15 @@ export function DeviceInsights() {
 
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 p-2 pl-4 rounded-3xl shadow-xl border border-zinc-200 dark:border-zinc-800">
-                <Calendar size={16} className="text-primary" />
+                {/* <Calendar size={16} className="text-primary" /> */}
                 <div className="flex items-center gap-2">
-                  <input type="datetime-local" value={tempStartDate} onChange={(e) => setTempStartDate(e.target.value)} className="bg-transparent text-[11px] font-black outline-none dark:text-zinc-100 cursor-pointer" />
-                  <span className="text-[10px] font-black text-zinc-400">ATÉ</span>
-                  <input type="datetime-local" value={tempEndDate} onChange={(e) => setTempEndDate(e.target.value)} className="bg-transparent text-[11px] font-black outline-none dark:text-zinc-100 cursor-pointer" />
+                  <input type="datetime-local" value={tempStartDate} onChange={(e) => setTempStartDate(e.target.value)} className="bg-transparent text-md font-black outline-none dark:text-zinc-100 cursor-pointer" />
+                  <span className="text-xs font-black text-zinc-400">ATÉ</span>
+                  <input type="datetime-local" value={tempEndDate} onChange={(e) => setTempEndDate(e.target.value)} className="bg-transparent text-md font-black outline-none dark:text-zinc-100 cursor-pointer" />
                 </div>
               </div>
-              <button onClick={handleApplyFilter} disabled={loading} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-tighter transition-all active:scale-95 shadow-lg group">
-                <RefreshCcw size={16} className={`${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-500`} />
+              <button onClick={handleApplyFilter} disabled={loading} className="flex items-center gap-2 bg-primary dark:bg-secondary hover:bg-primary/90 dark:hover:bg-secondary/90 text-white dark:text-zinc-900 cursor-pointer px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-tighter transition-all active:scale-95 shadow-lg group">
+                <RefreshCcw size={16} className={`${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-500 text-white dark:text-zinc-900`} />
                 {loading ? 'Buscando...' : 'Atualizar'}
               </button>
             </div>
