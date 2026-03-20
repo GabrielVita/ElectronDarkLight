@@ -5,6 +5,9 @@ import { DeviceDetailsModal } from '../components/DeviceDetailsModal';
 import { translateSector, SECTOR_TRANSLATIONS } from '../utils/translations'; // Certifique-se que SECTOR_TRANSLATIONS existe
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { TitleBar } from '../components/TitleBar';
+import { DeviceGraphicModal } from '../components/DeviceGraphicModal';
+import { ChartLine, SquarePen } from 'lucide-react';
+import { DeviceEditModal } from '../components/DeviceEdit';
 
 interface Device {
   id: string;
@@ -49,6 +52,8 @@ export function Dashboard() {
 
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isGraphicModalOpen, setIsGraphicModalOpen] = useState(false);
 
   // Função para buscar inconformidades por setor no mês atual
   const fetchNonConformities = useCallback(async (token: string) => {
@@ -177,7 +182,8 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    // Remova dependências desnecessárias se a intenção é carregar apenas no início
+  }, []);
 
   const equipamentosFiltrados = devices.filter(item => {
     if (filter === 'Todos') return true;
@@ -188,6 +194,11 @@ export function Dashboard() {
     }
     return true;
   });
+  const handleCloseEdit = () => {
+    setIsEditModalOpen(false);
+    // Opcional: setSelectedDevice(null); 
+    // Mas cuidado: se você limpar aqui, o modal pode piscar ao fechar
+  };
 
   return (
     <div className="flex h-screen w-full bg-zinc-200 dark:bg-zinc-950 transition-colors duration-500">
@@ -310,7 +321,7 @@ export function Dashboard() {
                   <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider">
                     Umidade Recente
                   </th>
-                  <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider text-right">
+                  <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider text-center">
                     Ação
                   </th>
                 </tr>
@@ -361,16 +372,38 @@ export function Dashboard() {
                         <td className={`px-6 py-4 text-base ${humClass}`}>
                           {humDisplay}
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <button 
-                            onClick={() => {
-                              setSelectedDevice(item);
-                              setIsModalOpen(true);
-                            }}
-                            className="bg-primary/10 text-primary dark:bg-secondary/10 dark:text-secondary px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-primary hover:text-white dark:hover:bg-secondary dark:hover:text-zinc-900 transition-all cursor-pointer"
-                          >
-                            Ver mais
-                          </button>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <button 
+                              onClick={() => {
+                                setSelectedDevice(item);
+                                setIsModalOpen(true);
+                              }}
+                              className="bg-primary/10 text-primary dark:bg-secondary/10 dark:text-secondary px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-primary hover:text-white dark:hover:bg-secondary dark:hover:text-zinc-900 transition-all cursor-pointer"
+                            >
+                              Ver mais
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setSelectedDevice(item);
+                                setIsGraphicModalOpen(true);
+                              }}
+                              className="h-8 w-8 flex items-center justify-center bg-primary/10 text-primary dark:bg-secondary/10 dark:text-secondary rounded-lg hover:bg-primary hover:text-white dark:hover:bg-secondary dark:hover:text-zinc-900 transition-all cursor-pointer"
+                              title="Visualizar dados"
+                            >
+                              <ChartLine size={16} />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setSelectedDevice(item);
+                                setIsEditModalOpen(true);
+                              }}
+                              className="h-8 w-8 flex items-center justify-center bg-primary/10 text-primary dark:bg-secondary/10 dark:text-secondary rounded-lg hover:bg-primary hover:text-white dark:hover:bg-secondary dark:hover:text-zinc-900 transition-all cursor-pointer"
+                              title="Editar Sensor"
+                            >
+                              <SquarePen size={16} />
+                            </button>
+                          </div>  
                         </td>
                       </tr>
                     );
@@ -391,8 +424,20 @@ export function Dashboard() {
           onClose={() => setIsModalOpen(false)} 
           device={selectedDevice} 
         />
+        
+        <DeviceEditModal 
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEdit}
+          deviceId={selectedDevice?.id ?? null}
+        />
+        <DeviceGraphicModal 
+        isOpen={isGraphicModalOpen}
+        onClose={() => setIsGraphicModalOpen(false)}
+        device={selectedDevice}
+      />
 
       </main>
+
     </div>
   );
 }

@@ -124,13 +124,13 @@ export function Signatures() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 text-primary dark:text-secondary mb-1">
                 <User size={18} />
-                <h2 className="font-black uppercase text-sm tracking-widest">Selecionar Usuário</h2>
+                <h2 className="font-bold uppercase text-sm tracking-widest">Selecionar Usuário</h2>
               </div>
               <select 
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 disabled={fetchingUsers}
-                className="w-full bg-zinc-100 dark:bg-zinc-800 border-none rounded-2xl p-4 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary outline-none font-bold text-lg appearance-none cursor-pointer disabled:opacity-50"
+                className="w-full bg-zinc-100 dark:bg-zinc-800 border-none rounded-2xl p-4 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary outline-none font-semibold text-lg appearance-none cursor-pointer disabled:opacity-50"
               >
                 <option value="" disabled>
                   {fetchingUsers ? 'Carregando usuários...' : 'Selecione o profissional...'}
@@ -148,7 +148,7 @@ export function Signatures() {
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 text-primary dark:text-secondary">
                     <Signature size={18} />
-                    <h2 className="font-black uppercase text-sm tracking-widest">Assinatura Manuscrita</h2>
+                    <h2 className="font-bold uppercase text-sm tracking-widest">Assinatura Manuscrita</h2>
                     </div>
                     <button 
                     onClick={clearSignature}
