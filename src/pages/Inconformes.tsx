@@ -161,13 +161,13 @@ export function Inconformes() {
   );
 
   return (
-    <div className="flex h-screen w-full bg-zinc-200 dark:bg-zinc-950 transition-colors duration-500">
+    <div className="flex h-screen w-full bg-terciary dark:bg-zinc-950 transition-colors duration-500">
       <TitleBar />
       <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
 
       <main className="flex-1 pt-4 flex flex-col relative overflow-y-auto bg-primary/15 dark:bg-zinc-950">
         <header className="p-8">
-           <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+           <h1 className="text-2xl font-bold text-zinc-100">
              Inconformidades {isAdmin && <span className="text-sm font-normal opacity-60">(Painel Admin)</span>}
            </h1>
         </header>
@@ -221,7 +221,7 @@ export function Inconformes() {
         </section>
 
         <div className="mx-7 mb-4">
-            <span className="bg-primary/10 text-primary dark:bg-secondary/10 dark:text-secondary px-4 py-1.5 rounded-full text-xs font-bold border border-primary/20">
+            <span className="bg-zinc-200 text-primary dark:bg-secondary/10 dark:text-secondary px-4 py-1.5 rounded-full text-xs font-bold border border-primary/20">
                 {filteredData.length} registros encontrados
             </span>
         </div>
