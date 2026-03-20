@@ -111,8 +111,8 @@ export function Signatures() {
               <Signature className='text-white dark:text-zinc-900' size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-zinc-800 dark:text-zinc-100 uppercase tracking-tighter leading-none">Assinaturas Digitais</h1>
-              <p className="text-zinc-500 text-xs font-bold uppercase mt-1">Vincular rubrica manuscrita ao perfil do usuário</p>
+              <h1 className="text-2xl font-black text-zinc-800 dark:text-zinc-100 uppercase tracking-tighter leading-none">Cadastro de Assinaturas</h1>
+              
             </div>
           </div>
         </header>
