@@ -5,6 +5,7 @@ import { TitleBar } from '../components/TitleBar';
 import { DeviceNCModal } from '../components/DeviceNCModal';
 import { DeviceGraphicModal } from '../components/DeviceGraphicModal';
 import { ChartLine } from 'lucide-react';
+import { translateSector } from '../utils/translations';
 
 interface Device {
   id: string;
@@ -57,6 +58,7 @@ export function Menu() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [allNonConformities, setAllNonConformities] = useState<NonConformity[]>([]);
   const [isGraphicModalOpen, setIsGraphicModalOpen] = useState(false);
+  const [userSector, setUserSector] = useState<string | null>(null);
 
   const fetchReadingType = async (deviceId: string, type: 'TEMPERATURE' | 'HUMIDITY', token: string) => {
     try {
@@ -76,6 +78,11 @@ export function Menu() {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
+    const savedUser = localStorage.getItem('@App:user');
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      setUserSector(userData.sector); // Armazena o setor do admin/user logado
+    }
     try {
       const savedUser = localStorage.getItem('@App:user');
       const token = localStorage.getItem('@App:token');
@@ -201,16 +208,16 @@ export function Menu() {
     });
 
   return (
-    <div className="flex  h-screen w-full bg-zinc-200 dark:bg-zinc-950 transition-colors duration-500">
+    <div className="flex  h-screen w-full bg-terciary dark:bg-zinc-950 transition-colors duration-500">
       <TitleBar />
       <Sidebar isOpen={isOpen} setIsOpen={setIsOpen}  />
         <main className="flex-1 pt-4 flex flex-col relative overflow-hidden bg-primary/15 dark:bg-zinc-950">
         
           <header className="p-8">
-            <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+            <h1 className="text-2xl font-bold text-zinc-100">
               Sensores e informações gerais
             </h1>
-            <p className="text-zinc-500">Monitoramento em tempo real</p>
+            <p className="text-zinc-300 dark:text-zinc-500">Monitoramento em tempo real</p>
           </header>
 
           <section className="p-8 pt-0 overflow-y-auto">
@@ -234,7 +241,7 @@ export function Menu() {
           </section>
 
           <div className="px-8 pb-6 flex flex-wrap items-center gap-4">
-            <div className='font-semibold text-zinc-800 dark:text-zinc-100'>Filtrar por: </div>
+            <div className='font-semibold text-zinc-100'>Filtrar por: </div>
             {/* Filtro de Status */}
             <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 rounded-xl">
               {['Todos', 'Inconformes'].map((status) => (
@@ -306,13 +313,22 @@ export function Menu() {
                     return (
                       <tr key={item.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group ">
                         <td className="px-6 py-4 font-bold text-sm">
-                          <span className={`px-2 py-1 rounded-md ${
-                            item.isBeingUsed 
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' 
-                              : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
-                          }`}>
-                            {item.equipment}
-                          </span>
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className={`px-2 py-1 rounded-md ${
+                              item.isBeingUsed 
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' 
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                            }`}>
+                              {item.equipment}
+                            </span>
+                            
+                            {/* TAG DE SETOR DIFERENTE: Aparece apenas se o sensor não for do setor do usuário */}
+                            {userSector && item.sector !== userSector && (
+                              <span className="text-center bg-zinc-100 dark:bg-zinc-800  text-zinc-500 text-[10px] px-1.5 py-0.5 rounded  uppercase tracking-tighter">
+                                Setor: {translateSector(item.sector)}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className={`font-bold ${ncCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-zinc-400'}`}>

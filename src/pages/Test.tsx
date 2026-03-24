@@ -7,11 +7,12 @@ import {
   Search, 
   Settings, 
   Database,
-  FlaskConical, // Ícone para Laboratory
-  Activity
+  FlaskConical,
+  Activity,
+  UserCheck // Ícone para o Técnico
 } from 'lucide-react';
 
-// INTERFACE ATUALIZADA COM SEU JSON
+// INTERFACE PARA DISPOSITIVOS
 interface Device {
   id: string;
   name: string;
@@ -29,12 +30,35 @@ interface Device {
   isBeingUsed: boolean;
 }
 
+// NOVA INTERFACE PARA CONFIGURAÇÕES
+interface Configurations {
+  technicianSignatureForReports: string;
+  technicianSignatureId: string;
+}
+
 export function Test() {
   const [isOpen, setIsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [devices, setDevices] = useState<Device[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Novo estado para as configurações
+  const [configs, setConfigs] = useState<Configurations | null>(null);
 
+  // 1. Buscar Configurações (Novo GET)
+  const fetchConfigs = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('@App:token');
+      const response = await axios.get('http://192.168.1.3:8087/api/configurations', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConfigs(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar configurações:", error);
+    }
+  }, []);
+
+  // 2. Buscar Dispositivos
   const fetchAllDevices = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -42,21 +66,20 @@ export function Test() {
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       const response = await axios.get('http://192.168.1.3:8087/api/devices', config);
-      
-      // Se a resposta vier direto como array, setDevices(response.data)
-      // Se vier dentro de um objeto, ajuste para response.data.content ou similar
       setDevices(Array.isArray(response.data) ? response.data : []);
       
     } catch (error: any) {
-      console.error("Erro na requisição:", error);
+      console.error("Erro na requisição de dispositivos:", error);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  // Carrega ambos ao montar o componente
   useEffect(() => {
+    fetchConfigs();
     fetchAllDevices();
-  }, [fetchAllDevices]);
+  }, [fetchConfigs, fetchAllDevices]);
 
   const filteredDevices = devices.filter(d => 
     d.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -70,11 +93,20 @@ export function Test() {
 
       <main className="flex-1 flex flex-col relative overflow-hidden">
         <header className="p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
-          <div>
+          <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
               <Settings className="text-primary" size={24} /> Gerenciamento de Sensores
             </h1>
-            <p className="text-sm text-zinc-500 font-medium">Lista de dispositivos cadastrados no sistema</p>
+            
+            {/* Exibição da Assinatura do Técnico retornada pelo novo GET */}
+            {configs && (
+              <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg w-fit">
+                <UserCheck size={14} className="text-emerald-500" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                  Técnico: {configs.technicianSignatureForReports}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
@@ -89,8 +121,8 @@ export function Test() {
               />
             </div>
             <button 
-              onClick={fetchAllDevices}
-              className="p-2.5 bg-primary text-white rounded-xl hover:opacity-90 transition-all cursor-pointer"
+              onClick={() => { fetchAllDevices(); fetchConfigs(); }}
+              className="p-2.5 bg-primary text-white rounded-xl hover:opacity-90 transition-all cursor-pointer shadow-lg shadow-primary/20"
             >
               <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
             </button>
@@ -104,7 +136,6 @@ export function Test() {
                 key={device.id}
                 className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden group hover:border-primary/50 transition-all"
               >
-                {/* Topo do Card: Identificação */}
                 <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/20">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
@@ -118,7 +149,6 @@ export function Test() {
                   <div className={`h-2.5 w-2.5 rounded-full ${device.isBeingUsed ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300'}`} />
                 </div>
 
-                {/* Conteúdo: Info Técnica */}
                 <div className="p-5 grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <span className="text-[10px] text-zinc-400 uppercase font-bold">Setor</span>
@@ -138,7 +168,6 @@ export function Test() {
                   </div>
                 </div>
 
-                {/* Rodapé: Limites de Operação */}
                 <div className="px-5 py-4 bg-zinc-50 dark:bg-zinc-800/40 flex items-center justify-between">
                    <div className="flex gap-4">
                       <div className="flex flex-col">
@@ -159,11 +188,10 @@ export function Test() {
             ))}
           </div>
 
-          {/* Fallback se não houver dados */}
           {filteredDevices.length === 0 && !isLoading && (
              <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
                 <Database size={40} className="mb-2 opacity-20" />
-                <p>Nenhum dado recebido do endpoint.</p>
+                <p className="font-medium">Nenhum dado recebido do endpoint.</p>
              </div>
           )}
         </section>

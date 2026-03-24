@@ -10,11 +10,17 @@ export const SECTOR_TRANSLATIONS: Record<string, string> = {
   RESONANCE: 'Ressonância',
   MAINTENANCE: 'Manutenção',
   CLINICAL_ENGINEERING: 'Engenharia Clínica',
+  CCIH: 'CCIH',
 };
 
 export const FUNCTION_TRANSLATIONS: Record<string, string> = {
   ROOM: 'Ambiente',
   EQUIPMENT: 'Geladeira/Freezer'
+};
+
+export const ROLE_TRANSLATIONS: Record<string, string> = {
+  USER: 'Usuário',
+  ADMIN: 'Administrador'
 };
 
 /**
@@ -25,6 +31,10 @@ export const translateSector = (sector: string | null | undefined): string => {
   return SECTOR_TRANSLATIONS[sector] || sector;
 };
 
+export const translateRole = (role: string | null | undefined): string => {
+  if (!role) return 'Não definido';
+  return ROLE_TRANSLATIONS[role] || role;
+};
 /**
  * Traduz a função do dispositivo (ROOM, EQUIPMENT, etc).
  * O nome da função é 'translateDeviceFunction' para evitar conflito com a palavra reservada 'function'.

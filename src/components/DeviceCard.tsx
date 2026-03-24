@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Thermometer, Droplets, Activity, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Thermometer, Droplets, Activity, AlertTriangle, TrendingUp, TrendingDown, ClipboardCheck } from 'lucide-react';
 import { translateSector } from '../utils/translations';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-  ResponsiveContainer, Legend, BarChart, Bar, Cell, Tooltip 
+  ResponsiveContainer, Legend, BarChart, Bar, Cell, Tooltip,
+  PieChart, Pie
 } from 'recharts';
 
 export function DeviceCard({ device, startDate, endDate }: any) {
@@ -12,10 +13,11 @@ export function DeviceCard({ device, startDate, endDate }: any) {
   const [statsTemp, setStatsTemp] = useState({ min: null, max: null, mean: null });
   const [statsHum, setStatsHum] = useState({ min: null, max: null, mean: null });
   const [ncChartData, setNcChartData] = useState<any[]>([]);
+  const [pieData, setPieData] = useState<any[]>([]);
   const [percentageTrend, setPercentageTrend] = useState<{ val: string; up: boolean } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 1. Busca leituras (Temperatura e Umidade)
+  // 1. Busca leituras (Mantido conforme original)
   const fetchReadings = useCallback(async () => {
     if (!startDate || !endDate) return;
     setIsLoading(true);
@@ -61,59 +63,83 @@ export function DeviceCard({ device, startDate, endDate }: any) {
     }
   }, [device.id, startDate, endDate]);
 
-  // 2. Busca Não Conformidades (3 meses fechados do calendário)
+  // 2. Busca Não Conformidades (BarChart + PieChart)
+  
   const fetchNonConformities = useCallback(async () => {
     try {
       const token = localStorage.getItem('@App:token');
-      const user = JSON.parse(localStorage.getItem('@App:user') || '{}');
-      
       const now = new Date();
-      // Início de 2 meses atrás (Ex: se hoje é 16/Março, pega 01/Janeiro)
+      // 3 meses atrás
       const firstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1);
       
-      const response = await axios.post('http://192.168.1.3:8087/api/nonconformities/resolved/no-action', {
-        sector: user.sector,
-        startDate: firstDay.toISOString().split('T')[0],
-        endDate: now.toISOString().split('T')[0]
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      // FORMATO EXATO: YYYY-MM-DD
+      const dateInit = firstDay.toISOString().split('T')[0];
+      const dateEnd = now.toISOString().split('T')[0];
 
-      // Filtra apenas as NCs deste dispositivo específico
-      const ncs = response.data.filter((nc: any) => nc.device.id === device.id);
+      const payload = {
+        deviceId: device.id, // O nome da chave DEVE ser deviceId
+        startDate: dateInit,
+        endDate: dateEnd
+      };
       
+      const config = { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      };
+
+      console.log("Enviando Payload NC:", payload); // Debug para conferir no console
+
+      const response = await axios.post('http://192.168.1.3:8087/api/nonconformities/period/device', payload, config);
+      
+      const allNcs = response.data || [];
+
+      // --- FILTROS ---
+      // 1. Apenas encerradas
+      const resolvedNcs = allNcs.filter((nc: any) => nc.endTimestamp !== null);
+
+      // 2. Separação para o PieChart
+      const ncsNoAction = resolvedNcs.filter((nc: any) => !nc.actionPlan || nc.actionPlan.trim() === "");
+      const ncsWithAction = resolvedNcs.filter((nc: any) => nc.actionPlan && nc.actionPlan.trim() !== "");
+
+      setPieData([
+        { name: 'Com Plano', value: ncsWithAction.length, color: '#10b981' },
+        { name: 'Sem Plano', value: ncsNoAction.length, color: '#eb4034' },
+      ]);
+
+      // --- HISTÓRICO (BarChart) ---
       const monthsLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      
-      // Gera a estrutura dos últimos 3 meses
       const last3 = [2, 1, 0].map(offset => {
         const d = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-        return {
-          month: d.getMonth(),
-          year: d.getFullYear(),
-          name: monthsLabels[d.getMonth()],
-          count: 0
+        return { 
+          month: d.getMonth(), 
+          year: d.getFullYear(), 
+          name: monthsLabels[d.getMonth()], 
+          count: 0 
         };
       });
 
-      ncs.forEach((nc: any) => {
+      resolvedNcs.forEach((nc: any) => {
         const ncDate = new Date(nc.createdAt || nc.startTimestamp);
         const mIdx = last3.find(x => x.month === ncDate.getMonth() && x.year === ncDate.getFullYear());
         if (mIdx) mIdx.count++;
       });
 
-      // Cálculo da tendência (Mês Atual vs Anterior)
+      setNcChartData(last3);
+
+      // --- TENDÊNCIA ---
       const current = last3[2].count;
       const previous = last3[1].count;
       if (previous > 0) {
         const diff = ((current - previous) / previous) * 100;
         setPercentageTrend({ val: Math.abs(diff).toFixed(0), up: diff > 0 });
-      } else if (current > 0) {
-        setPercentageTrend({ val: '100', up: true });
       } else {
-        setPercentageTrend(null);
+        setPercentageTrend(current > 0 ? { val: '100', up: true } : null);
       }
 
-      setNcChartData(last3);
-    } catch (err) {
-      console.error("Erro NC:", err);
+    } catch (err: any) {
+      console.error("Erro NC detalhado:", err.response?.data || err.message);
     }
   }, [device.id]);
 
@@ -123,7 +149,7 @@ export function DeviceCard({ device, startDate, endDate }: any) {
   }, [fetchReadings, fetchNonConformities]);
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 shadow-sm border border-zinc-200 dark:border-zinc-800 flex flex-col gap-6 relative min-h-[600px]">
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl p-8 shadow-sm border border-zinc-200 dark:border-zinc-800 flex flex-col gap-6 relative min-h-[600px]">
       {isLoading && (
         <div className="absolute inset-0 bg-white/50 dark:bg-black/20 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-[2.5rem]">
           <Activity className="animate-spin text-primary" />
@@ -136,7 +162,7 @@ export function DeviceCard({ device, startDate, endDate }: any) {
         <p className="text-md font-semibold text-primary dark:text-secondary tracking-widest">{device.name} • {translateSector(device.sector)}</p>
       </div>
 
-      {/* LINHA 1: STATS TEMPERATURA E UMIDADE */}
+      {/* LINHA 1: STATS (TEMPERATURA E UMIDADE) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-emerald-50/50 dark:bg-emerald-500/5 p-5 rounded-[2rem] border border-emerald-100 dark:border-emerald-500/10">
           <div className="flex items-center gap-2 mb-4 text-emerald-600 dark:text-emerald-400 font-black text-xs uppercase italic">
@@ -159,10 +185,15 @@ export function DeviceCard({ device, startDate, endDate }: any) {
           </div>
         </div>
       </div>
-      {/* LINHA 3: GRÁFICO DE ÁREA (TEMPO REAL/SELECIONADO) */}
+
+      {/* LINHA 2: GRÁFICO DE ÁREA */}
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} style={{ pointerEvents: 'none' }}>
+          <AreaChart 
+            data={chartData} 
+            /* 1. Desativa eventos de mouse no gráfico */
+            style={{ pointerEvents: 'none' }} 
+          >
             <defs>
               <linearGradient id="colorT" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
@@ -172,59 +203,143 @@ export function DeviceCard({ device, startDate, endDate }: any) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888" opacity={0.1} />
-            <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} minTickGap={60} />
+            <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} />
             <YAxis yAxisId="left" fontSize={11} tickLine={false} axisLine={false} tick={{fill: '#10b981', fontWeight: 'bold'}} unit="°C" />
             <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} axisLine={false} tick={{fill: '#3b82f6', fontWeight: 'bold'}} unit="%" />
+            
+            {/* 2. Remova o Tooltip se ele estiver presente aqui */}
+            
             <Legend verticalAlign="top" height={36}/>
-            <Area yAxisId="left" type="monotone" dataKey="temp" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorT)" name="Temperatura" activeDot={false} isAnimationActive={false} />
-            <Area yAxisId="right" type="monotone" dataKey="hum" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" fillOpacity={1} fill="url(#colorH)" name="Umidade" activeDot={false} isAnimationActive={false} />
+            
+            <Area 
+              yAxisId="left" 
+              type="monotone" 
+              dataKey="temp" 
+              stroke="#10b981" 
+              strokeWidth={3} 
+              fill="url(#colorT)" 
+              name="Temperatura" 
+              /* 3. Desativa o ponto que aparece no hover */
+              activeDot={false} 
+              isAnimationActive={false} 
+            />
+            <Area 
+              yAxisId="right" 
+              type="monotone" 
+              dataKey="hum" 
+              stroke="#3b82f6" 
+              strokeWidth={2} 
+              strokeDasharray="5 5" 
+              fill="url(#colorH)" 
+              name="Umidade" 
+              /* 4. Desativa o ponto que aparece no hover */
+              activeDot={false} 
+              isAnimationActive={false}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      {/* LINHA 2: GRÁFICO DE BARRAS DE NÃO CONFORMIDADES (MESES DO CALENDÁRIO) */}
+
+      {/* LINHA 3: DUO CHART (BARRAS + PIZZA) */}
       <div className="bg-zinc-50 dark:bg-zinc-800/30 p-6 rounded-[2rem] border border-zinc-200 dark:border-zinc-800">
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2 text-red-500 dark:text-red-400 font-black text-xs uppercase italic">
-            <AlertTriangle size={16} /> Histórico de Inconformidades (Trimestre)
+          <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-black text-xs uppercase italic">
+            <AlertTriangle size={16} className="text-red-500" /> Visão de Não Conformidades
           </div>
-          {percentageTrend && (
-            <div className={`flex items-center gap-1 text-xs font-semibold ${percentageTrend.up ? 'text-red-500' : 'text-emerald-500'}`}>
-              {percentageTrend.up ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-              {percentageTrend.val}% vs mês anterior
-            </div>
-          )}
         </div>
         
-        <div className="h-32 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={ncChartData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#71717a', fontSize: 11, fontWeight: 'bold' }} 
-              />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} allowDecimals={false} />
-              <Tooltip 
-                cursor={{ fill: 'transparent' }}
-                contentStyle={{ 
-                  borderRadius: '12px', 
-                  border: 'none', 
-                  fontWeight: 'bold',
-                  backgroundColor: '#18181b', // Força um fundo escuro elegante (zinco-900)
-                  color: '#fff'               // Força o texto geral para branco
-                }}
-                labelStyle={{ color: '#a1a1aa' }} // Cor do título do mês (zinco-400)
-                itemStyle={{ color: '#eb4034' }}  // Cor do valor (Qtd) em âmbar/laranja
-              />
-              <Bar dataKey="count" name="Qtd" radius={[6, 6, 0, 0]} barSize={40}>
-                {ncChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={index === 2 ? '#eb4034' : '#3f3f46'} fillOpacity={index === 2 ? 1 : 0.4} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center h-40">
+          {/* Gráfico de Barras - Histórico */}
+          <div className="lg:col-span-2 h-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={ncChartData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#71717a', fontSize: 11, fontWeight: 'bold' }} 
+                />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} allowDecimals={false} />
+                <Tooltip 
+                  cursor={{ fill: 'transparent' }}
+                  contentStyle={{ 
+                    borderRadius: '12px', 
+                    border: 'none', 
+                    fontWeight: 'bold',
+                    backgroundColor: '#18181b', // Força um fundo escuro elegante (zinco-900)
+                    color: '#fff'               // Força o texto geral para branco
+                  }}
+                  labelStyle={{ color: '#a1a1aa' }} // Cor do título do mês (zinco-400)
+                  itemStyle={{ color: '#eb4034' }}  // Cor do valor (Qtd) em âmbar/laranja
+                />
+                <Bar dataKey="count" name="Qtd" radius={[6, 6, 0, 0]} barSize={40}>
+                  {ncChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={index === 2 ? '#eb4034' : '#3f3f46'} fillOpacity={index === 2 ? 1 : 0.4} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            {percentageTrend && (
+              <div className={`flex items-center justify-end gap-1 text-xs font-semibold ${percentageTrend.up ? 'text-red-500' : 'text-emerald-500'}`}>
+                {percentageTrend.up ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                {percentageTrend.val}% pendências vs mês anterior
+              </div>
+            )}
+          </div>
+
+          {/* Gráfico de Pizza - Eficiência */}
+          <div className="h-full flex flex-col items-center justify-center border-l border-zinc-200 dark:border-zinc-700">
+          <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-black text-xs uppercase italic">Planos de Ações</div>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  // ALTERAÇÃO AQUI: De 30 para 0 para preencher o centro
+                  innerRadius={0} 
+                  outerRadius={45}
+                  paddingAngle={0} 
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {pieData.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value: any, name: any) => {
+                    const val = Number(value);
+                    const total = pieData.reduce((acc: number, curr: any) => acc + curr.value, 0);
+                    
+                    if (total === 0) return ["0", "Sem dados"];
+                    
+                    const percentage = ((val / total) * 100).toFixed(0);
+                    
+                    return [
+                      `${val} (${percentage}%)`,
+                      `${name}`
+                    ];
+                  }}
+                  contentStyle={{ 
+                    borderRadius: '8px', 
+                    border: 'none', 
+                    backgroundColor: '#18181b', 
+                    color: '#fff',
+                    fontSize: '11px',
+                    padding: '8px'
+                  }}
+                  itemStyle={{ fontWeight: 'bold', color: '#fff' }}
+                  labelFormatter={() => ""}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex gap-4 text-[9px] font-bold uppercase tracking-tighter">
+              <span className="flex items-center gap-1 text-emerald-500"><div className="w-2 h-2 rounded-full bg-emerald-500"/> Planos OK</span>
+              <span className="flex items-center gap-1 text-red-500"><div className="w-2 h-2 rounded-full bg-red-500"/> Pendentes</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

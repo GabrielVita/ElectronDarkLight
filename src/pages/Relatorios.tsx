@@ -9,10 +9,27 @@ import JSZip from 'jszip';
 import { TitleBar } from '../components/TitleBar';
 
 // 1. Schema do Zod
+const SECTORS = [
+  { value: 'LABORATORY', label: 'Laboratório' },
+  { value: 'SURGICAL_CENTER', label: 'Centro Cirúrgico' },
+  { value: 'BLOOD_BANK', label: 'Banco de Sangue' },
+  { value: 'IESG', label: 'IESG' },
+  { value: 'ONCOLOGY', label: 'Oncologia' },
+  { value: 'NUTRITION', label: 'Nutrição' },
+  { value: 'UTI_A', label: 'UTI A' },
+  { value: 'HEMODYNAMICS', label: 'Hemodinâmica' },
+  { value: 'RESONANCE', label: 'Ressonância' },
+  { value: 'MAINTENANCE', label: 'Manutenção' },
+  { value: 'CLINICAL_ENGINEERING', label: 'Engenharia Clínica' },
+];
+
+// 2. Schema do Zod Atualizado
 const reportSchema = z.object({
   dateInit: z.string().min(1, { message: "Data inicial obrigatória" }),
   dateEnd: z.string().min(1, { message: "Data final obrigatória" }),
   type: z.string().min(1, { message: "Selecione o tipo de relatório" }),
+  // ADICIONADO: Campo opcional de setor para o Zod não reclamar
+  sector: z.string().optional(), 
 }).refine((data) => {
   const start = new Date(data.dateInit);
   const end = new Date(data.dateEnd);
@@ -48,11 +65,10 @@ export function Relatorios() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ReportFormData>({
     resolver: zodResolver(reportSchema),
     defaultValues: { 
-      // Se for admin, já definimos ALL. Se for user, deixamos vazio para obrigar a escolha.
-      type: isAdmin ? "ALL" : "" 
+      type: isAdmin ? "ALL" : "",
+      sector: "" // Inicializa o select vazio
     }
   });
-
   const onSubmit = async (data: ReportFormData) => {
     setDownloadProgress(0);
 
@@ -61,49 +77,50 @@ export function Relatorios() {
       const currentUserRaw = localStorage.getItem('@App:user');
       
       if (!currentUserRaw) {
-        alert("Sessão expirada. Por favor, faça login novamente.");
+        alert("Sessão expirada.");
         return;
       }
 
       const currentUser = JSON.parse(currentUserRaw);
-      const role = currentUser.role;
-      const isAdmin = role === 'ADMIN';
-
-      // Capturando o ID do usuário (verifique se no seu objeto é .id ou .userId)
+      const isAdmin = currentUser.role === 'ADMIN';
       const userId = currentUser.id || currentUser.userId;
 
-      const sectorValue = typeof currentUser.sector === 'object' 
-        ? currentUser.sector.name || currentUser.sector.id 
-        : currentUser.sector;
+      // --- NOVA LÓGICA DE DEFINIÇÃO DE SETOR PARA O NOME DO ARQUIVO ---
+      let finalSectorName = "";
 
       const url = isAdmin 
-        ? 'http://192.168.1.3:8087/api/reports/all' 
-        : 'http://192.168.1.3:8087/api/reports/sector';
+        ? 'http://192.168.1.3:8087/api/reports/sector' 
+        : 'http://192.168.1.3:8087/api/reports/user';
 
-      // Montagem do corpo com o userId obrigatório para usuários comuns
       const requestBody: any = {
         startDate: data.dateInit,
         endDate: data.dateEnd,
-        type: isAdmin ? "ALL" : data.type,
         branch: "HMG",
       };
 
-      if (!isAdmin) {
-        if (!sectorValue || !userId) {
-          alert("Erro: Dados de setor ou ID do usuário não encontrados.");
+      if (isAdmin) {
+        if (!data.sector) {
+          alert("Por favor, selecione um setor.");
           return;
         }
-        requestBody.sector = String(sectorValue);
-        requestBody.userId = userId; // <--- ADICIONADO AQUI
-      }
+        requestBody.type = "ALL";
+        requestBody.sector = data.sector;
+        finalSectorName = data.sector; // Define o nome do setor escolhido pelo Admin
+      } else {
+        const sectorValue = typeof currentUser.sector === 'object' 
+          ? currentUser.sector.name || currentUser.sector.id 
+          : currentUser.sector;
 
-      console.log("Enviando para:", url);
-      console.log("Corpo Final:", requestBody);
+        requestBody.type = data.type;
+        requestBody.sector = String(sectorValue);
+        requestBody.userId = userId;
+        finalSectorName = String(sectorValue); // Define o nome do setor do usuário comum
+      }
 
       const response = await axios.post(url, requestBody, {
         headers: { 
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'Content-Type': 'application/json' // Força o cabeçalho de JSON
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json' 
         },
         onDownloadProgress: (progressEvent) => {
           if (progressEvent.total) {
@@ -119,7 +136,9 @@ export function Relatorios() {
 
       if (response.data.reports && response.data.reports.length > 0) {
         const zip = new JSZip();
-        const folderName = `Relatorios_${isAdmin ? 'Geral' : sectorValue}_${data.dateInit}`;
+        
+        // USANDO A VARIÁVEL UNIFICADA AQUI:
+        const folderName = `Relatorios_${finalSectorName}_${data.dateInit}`;
         const reportFolder = zip.folder(folderName);
 
         response.data.reports.forEach((report: ReportItem) => {
@@ -142,20 +161,19 @@ export function Relatorios() {
       }
 
     } catch (error: any) {
-      console.error("Erro detalhado da API:", error.response?.data || error.message);
-      alert(`Erro ${error.response?.status || ''}: ${JSON.stringify(error.response?.data) || "Falha na comunicação."}`);
+      console.error("Erro detalhado:", error);
       setDownloadProgress(0);
     }
   };
 
   return (
-    <div className="flex h-screen w-full bg-zinc-200 dark:bg-zinc-950 transition-colors duration-500">
+    <div className="flex h-screen w-full bg-terciary dark:bg-zinc-950 transition-colors duration-500">
       <TitleBar />
       <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
 
       <main className="flex-1 pt-4 flex flex-col relative overflow-hidden bg-primary/15 dark:bg-zinc-950">
         <header className="p-8">
-          <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">Gerar Relatórios</h1>
+          <h1 className="text-2xl font-bold text-zinc-100">Gerar Relatórios</h1>
         </header>
 
         <section className="p-8 pt-0 flex justify-center overflow-y-auto">
@@ -223,6 +241,30 @@ export function Relatorios() {
                 </div>
 
                 {/* SELETOR DE TIPO (SÓ APARECE PARA USER) */}
+                {isAdmin && (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 ml-1">
+                      Setor do Relatório
+                    </label>
+                    <select 
+                      {...register('sector')}
+                      className={`w-full p-3 rounded-xl border-2 bg-transparent transition-all outline-none
+                        ${errors.sector ? 'border-red-500/50' : 'border-zinc-100 dark:border-zinc-800 focus:border-primary'}`}
+                    >
+                      <option value="">Selecione um setor...</option>
+                      {SECTORS.map(s => (
+                        <option key={s.value} value={s.value} className="dark:bg-zinc-900">{s.label}</option>
+                      ))}
+                    </select>
+                    {errors.sector && (
+                      <span className="text-xs text-red-500 flex items-center gap-1 ml-1">
+                        <AlertCircle size={12}/> {errors.sector.message}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* --- SE NÃO FOR ADMIN: MOSTRA RADIOS DE TIPO --- */}
                 {!isAdmin && (
                   <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-500">
                     <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 ml-1">Tipo de Medição</label>
