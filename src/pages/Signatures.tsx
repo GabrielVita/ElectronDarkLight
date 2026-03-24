@@ -6,6 +6,7 @@ import { TitleBar } from '../components/TitleBar';
 import { Signature, User, Trash2, Save, Loader2 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { translateSector } from '../utils/translations';
+import SignaturePad from 'react-signature-pad-wrapper';
 
 interface UserData {
   id: string;
@@ -23,7 +24,8 @@ export function Signatures() {
   const [loading, setLoading] = useState(false);
   const [fetchingUsers, setFetchingUsers] = useState(true);
   
-  const sigCanvas = useRef<SignatureCanvas>(null);
+  
+  const sigCanvas = useRef<SignaturePad>(null);
 
   // 1. Buscar lista de usuários ao carregar a página
   useEffect(() => {
@@ -56,7 +58,9 @@ export function Signatures() {
       return;
     }
 
-    if (sigCanvas.current?.isEmpty()) {
+    // Verifica se o canvas está vazio (se estiver usando a biblioteca nova ou o ref correto)
+    const canvas = sigCanvas.current;
+    if (!canvas || (typeof canvas.isEmpty === 'function' && canvas.isEmpty())) {
       toast.error('A assinatura está vazia.');
       return;
     }
@@ -67,25 +71,39 @@ export function Signatures() {
     setLoading(true);
 
     try {
-      // Pega o base64 com o cabeçalho (data:image/png;base64,...)
-      const base64Data = sigCanvas.current?.getTrimmedCanvas().toDataURL('image/png');
+      // 1. Recupera o token do localStorage
+      const token = localStorage.getItem('@App:token');
+      
+      // 2. Prepara o cabeçalho de configuração
+      const config = {
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        }
+      };
+
+      // 3. Pega o base64 (o toDataURL() funciona tanto no canvas puro quanto no pad-wrapper)
+      const base64Data = canvas.toDataURL('image/png');
+      // const base64Data = canvas.toDataURL('image/png').split(',')[1];
 
       const payload = {
         encodedSignature: base64Data,
-        fileName: `${selectedUser.firstName.toLowerCase()}signs.png`,
-        name: `${selectedUser.firstName} ${selectedUser.lastName}`
+        fileName: `${selectedUser.firstName.toLowerCase()}_signature`,
+        name: `${selectedUser.firstName} ${selectedUser.sector}`
       };
 
+      // 4. Envia com o payload e o config (headers)
       await axios.post(
         `http://192.168.1.3:8087/api/users/${selectedUserId}/signatures/upload`,
-        payload
+        payload,
+        config // <-- O token entra aqui como terceiro parâmetro
       );
 
       toast.success('Assinatura enviada com sucesso!');
       clearSignature();
       setSelectedUserId('');
+      
     } catch (error) {
-      console.error(error);
+      console.error("Erro no upload:", error);
       toast.error('Erro ao fazer upload da assinatura.');
     } finally {
       setLoading(false);
@@ -160,15 +178,16 @@ export function Signatures() {
 
                 {/* O fundo agora é fixo (bg-zinc-50) e a borda é fixa (border-zinc-300) */}
                 <div className="bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-3xl overflow-hidden h-64 relative">
-                    <SignatureCanvas 
-                    ref={sigCanvas}
-                    // Caneta sempre preta para simular tinta real
-                    penColor="#18181b" 
-                    canvasProps={{
-                        // Forçamos largura e altura total para o canvas interno
+                    <SignaturePad 
+                      ref={sigCanvas}
+                      options={{
+                        penColor: "#18181b",
+                        // outras opções aqui
+                      }}
+                      canvasProps={{
                         style: { width: '100%', height: '100%' },
                         className: "signature-canvas cursor-crosshair"
-                    }}
+                      }}
                     />
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none">
                     <span className="text-[10px] font-bold text-zinc-900 uppercase tracking-widest">

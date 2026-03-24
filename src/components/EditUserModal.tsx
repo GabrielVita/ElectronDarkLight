@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { X, Save, ShieldCheck, Cpu } from 'lucide-react';
+import { X, Save, ShieldCheck, Cpu, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { UserData, Device } from '../pages/User';
-import { translateSector} from '../utils/translations';
+import { translateSector } from '../utils/translations';
 
 interface Props {
   isOpen: boolean;
@@ -13,7 +13,6 @@ interface Props {
 }
 
 export function EditUserModal({ isOpen, onClose, user, allDevices }: Props) {
-  // Inicializamos o estado com os dados do usuário atual
   const [formData, setFormData] = useState({
     firstName: user.firstName,
     lastName: user.lastName,
@@ -22,7 +21,6 @@ export function EditUserModal({ isOpen, onClose, user, allDevices }: Props) {
   });
   const [loading, setLoading] = useState(false);
 
-  // Garante que o modal resete se trocarmos de usuário sem fechar o modal
   useEffect(() => {
     if (isOpen) {
       setFormData({
@@ -34,17 +32,14 @@ export function EditUserModal({ isOpen, onClose, user, allDevices }: Props) {
     }
   }, [user, isOpen]);
 
-  // Filtra dispositivos que NÃO pertencem ao setor base do usuário
   const availableExtraDevices = allDevices.filter(device => {
     const isDifferentSector = device.sector !== user.sector;
     const isAlreadyPermitted = user.otherPermittedDevicesIds?.includes(device.id);
-    
     return isDifferentSector || isAlreadyPermitted;
   });
 
   const toggleDevice = (deviceId: string) => {
     setFormData(prev => {
-      // Garantimos que trabalhamos com um array, mesmo que venha null
       const currentIds = prev.otherPermittedDevicesIds || [];
       const exists = currentIds.includes(deviceId);
       
@@ -67,14 +62,12 @@ export function EditUserModal({ isOpen, onClose, user, allDevices }: Props) {
     
     try {
       const token = localStorage.getItem('@App:token');
-      
-      // CORREÇÃO: Usamos user.login (o login do usuário editado) no endpoint
       const endpoint = `http://192.168.1.3:8087/api/users/${user.login}`;
       
       await axios.put(endpoint, 
         { 
-          ...user,      // Mantém campos fixos como ID e Login original
-          ...formData   // Sobrescreve com as alterações do formulário
+          ...user,
+          ...formData 
         }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -98,12 +91,12 @@ export function EditUserModal({ isOpen, onClose, user, allDevices }: Props) {
         {/* Header */}
         <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-900/50">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+            <div className="p-3 bg-primary/10 rounded-2xl text-primary dark:text-secondary">
               <ShieldCheck size={24} />
             </div>
             <div>
               <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100 uppercase tracking-tighter">Editar Usuário</h2>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Login: {user.login}</p>
+              <p className="text-md font-bold text-zinc-400 ">Login: {user.login}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-500 cursor-pointer">
@@ -113,13 +106,43 @@ export function EditUserModal({ isOpen, onClose, user, allDevices }: Props) {
 
         <form onSubmit={handleUpdate} className="p-6 overflow-y-auto custom-scrollbar space-y-6">
           
+          {/* SEÇÃO: INFORMAÇÕES PESSOAIS */}
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-zinc-400 uppercase ml-1 flex items-center gap-2">
+              <User size={14} /> Dados Pessoais
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black text-zinc-500 uppercase ml-1">Nome</label>
+                <input 
+                  type="text"
+                  value={formData.firstName}
+                  onChange={e => setFormData({...formData, firstName: e.target.value})}
+                  className="bg-zinc-100 dark:bg-zinc-800 rounded-xl p-3 text-sm font-bold outline-none border-2 border-transparent focus:border-primary/30 transition-all text-zinc-700 dark:text-zinc-200"
+                  placeholder="Ex: João"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black text-zinc-500 uppercase ml-1">Sobrenome</label>
+                <input 
+                  type="text"
+                  value={formData.lastName}
+                  onChange={e => setFormData({...formData, lastName: e.target.value})}
+                  className="bg-zinc-100 dark:bg-zinc-800 rounded-xl p-3 text-sm font-bold outline-none border-2 border-transparent focus:border-primary/30 transition-all text-zinc-700 dark:text-zinc-200"
+                  placeholder="Ex: Silva"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SEÇÃO: PERMISSÕES */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-black text-zinc-400 uppercase ml-1">Cargo</label>
               <select 
                 value={formData.role} 
                 onChange={e => setFormData({...formData, role: e.target.value})}
-                className="bg-zinc-100 dark:bg-zinc-800 rounded-xl p-3 text-sm font-bold outline-none border-2 border-transparent focus:border-primary/30 transition-all"
+                className="bg-zinc-100 dark:bg-zinc-800 rounded-xl p-3 text-sm cursor-pointer font-bold outline-none border-2 border-transparent focus:border-primary/30 transition-all"
               >
                 <option value="USER">Usuário</option>
                 <option value="ADMIN">Administrador</option>
@@ -133,11 +156,20 @@ export function EditUserModal({ isOpen, onClose, user, allDevices }: Props) {
             </div>
           </div>
 
+          {/* SEÇÃO: SENSORES EXTRAS */}
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-black text-zinc-400 uppercase ml-1 flex items-center gap-2">
               <Cpu size={14} /> Acesso a Sensores de Outros Setores
             </label>
-            <div className="grid grid-cols-1 gap-2 border border-zinc-100 dark:border-zinc-800 p-2 rounded-2xl max-h-60 overflow-y-auto custom-scrollbar bg-zinc-50/30 dark:bg-zinc-950/30">
+            <div className="grid grid-cols-1 gap-2 border border-zinc-100 dark:border-zinc-800 p-2 rounded-lg max-h-60 overflow-y-auto custom-scrollbar bg-zinc-50/30 dark:bg-zinc-950/30
+            [&::-webkit-scrollbar]:w-2
+            [&::-webkit-scrollbar-track]:bg-transparent
+            [&::-webkit-scrollbar-thumb]:bg-zinc-300
+            dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
+            [&::-webkit-scrollbar-thumb]:rounded-full
+            hover:[&::-webkit-scrollbar-thumb]:bg-zinc-400
+            dark:hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600
+            ">
               {availableExtraDevices.length === 0 ? (
                 <p className="text-center py-8 text-xs text-zinc-500 font-semibold italic">Nenhum sensor de outro setor disponível para vinculação.</p>
               ) : (
@@ -171,7 +203,7 @@ export function EditUserModal({ isOpen, onClose, user, allDevices }: Props) {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-primary dark:bg-secondary text-white dark:text-zinc-900 py-4 rounded-2xl font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary dark:bg-secondary text-white cursor-pointer dark:text-zinc-900 py-4 rounded-2xl font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Processando...' : <><Save size={18} /> Salvar Alterações</>}
           </button>
