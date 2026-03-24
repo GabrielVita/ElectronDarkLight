@@ -149,15 +149,15 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 icon={<User size={24} />} 
                 text="Usuários" 
                 isOpen={isOpen} 
-                onClick={() => navigate('/usuarios')}
-                isActive={location.pathname === '/usuarios'}
+                onClick={() => navigate('/user')}
+                isActive={location.pathname === '/user'}
               />
               <SidebarItem 
                 icon={<Cog size={24} />} 
                 text="Configurações" 
                 isOpen={isOpen} 
-                onClick={() => navigate('/configuracoes')}
-                isActive={location.pathname === '/configuracoes'}
+                onClick={() => navigate('/config')}
+                isActive={location.pathname === '/config'}
               />
               <SidebarItem 
                 icon={<Bug size={24} />} 

@@ -167,13 +167,13 @@ export function Relatorios() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-zinc-200 dark:bg-zinc-950 transition-colors duration-500">
+    <div className="flex h-screen w-full bg-terciary dark:bg-zinc-950 transition-colors duration-500">
       <TitleBar />
       <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
 
       <main className="flex-1 pt-4 flex flex-col relative overflow-hidden bg-primary/15 dark:bg-zinc-950">
         <header className="p-8">
-          <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">Gerar Relatórios</h1>
+          <h1 className="text-2xl font-bold text-zinc-100">Gerar Relatórios</h1>
         </header>
 
         <section className="p-8 pt-0 flex justify-center overflow-y-auto">

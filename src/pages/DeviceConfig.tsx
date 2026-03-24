@@ -47,6 +47,10 @@ export function DeviceConfig() {
     MAINTENANCE: 'Manutenção',
     CLINICAL_ENGINEERING: 'Engenharia Clínica',
   };
+    const FUNCTIONS = {
+      EQUIPMENT: 'Equipamento',
+      ROOM: 'Ambiente',
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -137,7 +141,7 @@ export function DeviceConfig() {
                   required
                   value={formData.sector}
                   onChange={handleChange}
-                  className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary outline-none font-semibold text-sm h-[46px]"
+                  className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary dark:focus:ring-secondary outline-none font-semibold text-sm h-[46px]"
                 >
                   <option value="" disabled>Selecione o setor...</option>
                   {Object.entries(SECTORS).map(([key, label]) => (
@@ -154,7 +158,7 @@ export function DeviceConfig() {
                     name="branch"
                     value={formData.branch}
                     onChange={handleChange}
-                    className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary outline-none font-semibold text-sm h-[46px]"
+                    className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary dark:focus:ring-secondary outline-none font-semibold text-sm h-[46px]"
                   >
                     <option value="HEC">HEC</option>
                     <option value="HMG">HMG</option>
@@ -183,7 +187,7 @@ export function DeviceConfig() {
             
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between px-1">
-                <label className="text-xs font-bold text-zinc-500 uppercase">Modelo Device</label>
+                <label className="text-xs font-bold text-zinc-500 uppercase">Modelo Aparelho</label>
                 <button 
                   type="button" // Importante: type="button" para não submeter o form
                   title="Ajuda para saber qual"
@@ -198,7 +202,7 @@ export function DeviceConfig() {
                 required
                 value={formData.deviceType}
                 onChange={handleChange}
-                className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary outline-none font-semibold text-sm h-[46px]"
+                className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary dark:focus:ring-secondary outline-none font-semibold text-sm h-[46px]"
               >
                 <option value="" disabled>Selecione o modelo...</option>
                 {['THR316', 'THR316D', 'TH16RF', 'TH'].map(opt => (
@@ -224,13 +228,33 @@ export function DeviceConfig() {
                 required
                 value={formData.sensor}
                 onChange={handleChange}
-                className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary outline-none font-semibold text-sm h-[46px]"
+                className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary  dark:focus:ring-secondary outline-none font-semibold text-sm h-[46px]"
               >
                 <option value="" disabled>Selecione o sensor...</option>
                 {['DS18B20', 'AM2301', 'SI7021', 'WTS01', 'DHT11'].map(opt => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-xs font-bold text-zinc-500 uppercase">Função do sensor</label>
+              </div>  
+              <select 
+                name="function"
+                required
+                value={formData.function}
+                onChange={handleChange}
+                className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary dark:focus:ring-secondary outline-none font-semibold text-sm h-[46px]"
+              >
+                <option value="" disabled>Selecione a função...</option>
+                {Object.entries(FUNCTIONS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+              
+              
             </div>
 
             {/* Seção: Parâmetros de Trabalho */}
@@ -310,7 +334,7 @@ function FormField({ label, name, type = 'text', value, onChange, placeholder }:
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary outline-none font-semibold text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+        className="bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl p-3 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-primary dark:focus:ring-secondary outline-none font-semibold text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
       />
     </div>
   );

@@ -12,6 +12,8 @@ import { Menu } from './pages/Menu';
 import { DeviceInsights } from './pages/DeviceInsights';
 import { DeviceConfig } from './pages/DeviceConfig';
 import { Signatures } from './pages/Signatures';
+import { UserPage } from './pages/User';
+import { Config } from './pages/Config';
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
             <Route path="/deviceinsights" element={<DeviceInsights />} />
             <Route path="/deviceconfig" element={<DeviceConfig />} />
             <Route path="/signatures" element={<Signatures />} />
+            <Route path="/user" element={<UserPage />} />
+            <Route path="/config" element={<Config />} />
           </Routes>
         </div>
       </AuthProvider>  

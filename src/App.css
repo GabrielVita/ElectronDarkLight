@@ -5,6 +5,7 @@
   /* Definindo as cores customizadas */
   --color-primary: #1b3561;
   --color-secondary: #ff8212;
+  --color-terciary: #02407c;
 }
 
 /* Esta linha abaixo é a única forma do 'dark:' funcionar por classe no v4 */
