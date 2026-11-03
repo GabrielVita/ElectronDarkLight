@@ -16,10 +16,20 @@ const SECTORS = {
     ONCOLOGY: 'Oncologia',
     NUTRITION: 'Nutrição',
     UTI_A: 'UTI A',
+    UTI_1: 'UTI PED 1',
+    UTI_2: 'UTI PED 2',
+    UTI_NEO: 'UTI Neonatal',
+    BIO_IMAGE: 'BIO Imagem',
     HEMODYNAMICS: 'Hemodinâmica',
     RESONANCE: 'Ressonância',
+    AMBULATORY: 'Ambulatório',
+    ONCOLOGY_AMBULATORY: 'Ambulatório Oncológico',
     MAINTENANCE: 'Manutenção',
     CLINICAL_ENGINEERING: 'Engenharia Clínica',
+    CME: 'CME',
+    CLINICAL_A: 'Clínica PED A',
+    CLINICAL_B: 'Clínica PED B',
+    CLINICAL_C: 'Clínica PED C',
 };
 
 const FUNCTIONS = {
@@ -195,7 +205,7 @@ export function DeviceEditModal({ isOpen, onClose, deviceId }: DeviceEditModalPr
                   <Laptop size={20} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-extrabold text-primary dark:text-secondary uppercase tracking-tighter">Editar Dispositivo</h2>
+                  <h2 className="text-lg font-extrabold text-primary dark:text-secondary uppercase tracking-tighter">Editar Dispositivo </h2>
                 </div>
             </div>
           <div className="flex items-center gap-6">

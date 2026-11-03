@@ -121,13 +121,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             onClick={() => navigate('/inconformes')}
             isActive={location.pathname === '/inconformes'}
           />
-          <SidebarItem 
-            icon={<Lightbulb size={24} />} 
-            text="Dados" 
-            isOpen={isOpen} 
-            onClick={() => navigate('/deviceinsights')}
-            isActive={location.pathname === '/deviceinsights'}
-          />
+          
           
           {isAdmin && (
             <>
@@ -137,6 +131,13 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 isOpen={isOpen} 
                 onClick={() => navigate('/deviceconfig')}
                 isActive={location.pathname === '/deviceconfig'}
+              />
+              <SidebarItem 
+                icon={<Lightbulb size={24} />} 
+                text="Dados" 
+                isOpen={isOpen} 
+                onClick={() => navigate('/deviceinsights')}
+                isActive={location.pathname === '/deviceinsights'}
               />
               <SidebarItem 
                 icon={<Signature size={24} />} 

@@ -20,6 +20,7 @@ const SECTORS = [
   { value: 'HEMODYNAMICS', label: 'Hemodinâmica' },
   { value: 'RESONANCE', label: 'Ressonância' },
   { value: 'MAINTENANCE', label: 'Manutenção' },
+  { value: 'CLINICAL_C', label: 'Clínica PED C' },
   { value: 'CLINICAL_ENGINEERING', label: 'Engenharia Clínica' },
 ];
 

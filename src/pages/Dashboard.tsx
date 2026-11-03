@@ -309,6 +309,9 @@ export function Dashboard() {
                   <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider">
                     Equipamento
                   </th>
+                  <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider">
+                    Nome
+                  </th>
                   <th className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 px-6 py-4 text-sm font-bold text-zinc-500 uppercase tracking-wider text-center">
                     Setor
                   </th>
@@ -356,6 +359,11 @@ export function Dashboard() {
                               : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
                           }`}>
                             {item.equipment}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-semibold px-2 py-1 text-center bg-zinc-100 dark:bg-zinc-800 rounded-md text-zinc-500 ">
+                            {item.name}
                           </span>
                         </td>
                         <td className="px-6 py-4">
